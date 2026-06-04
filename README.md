@@ -1,7 +1,8 @@
-## komenda do git basha na windowsie w celu ustawienia patha lub czegos:
+## komenda do git basha na windowsie w celu ustawienia patha lub czegos tam ¯\\\_(ツ)_/¯ :
+```bash
 export VIVADO_DIR=/c/Xilinx/2025.1/Vivado;
 export PATH=${VIVADO_DIR}/bin:${PATH} 
-
+```
 
 **Wszystkie komendy należy wywoływać z głównego folderu projektu**.\
 _Każdy plik w projekcie posiada nagłówek z krótkim opisem jego funkcji._
