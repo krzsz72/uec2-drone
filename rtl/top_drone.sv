@@ -12,7 +12,7 @@
  * The project top module.
  */
 
-module top_uart (
+module top_drone (
         input  logic clk,
         input  logic rst,
         input  logic rx,

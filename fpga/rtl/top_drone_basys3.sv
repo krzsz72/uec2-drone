@@ -12,7 +12,7 @@
  * Top level synthesizable module including the project top and all the FPGA-referred modules.
  */
 
-module top_uart_basys3 (
+module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
     input wire sw,
@@ -120,7 +120,7 @@ module top_uart_basys3 (
      *  Project functional top module
      */
 
-    top_uart u_top_uart (
+    top_uart u_top_drone (
         .clk  (pclk),
         .rst  (btnC),
         .rx   (RsRx),
