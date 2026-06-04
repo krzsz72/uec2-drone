@@ -174,8 +174,8 @@ set_property PACKAGE_PIN L2 [get_ports {JA2}]
 #set_property PACKAGE_PIN C15 [get_ports {JB[6]}]
 	#set_property IOSTANDARD LVCMOS33 [get_ports {JB[6]}]
 ##Sch name = JB10
-set_property PACKAGE_PIN C16 [get_ports {JB[7]}]
-	set_property IOSTANDARD LVCMOS33 [get_ports {JB[7]}]
+set_property PACKAGE_PIN C16 [get_ports {JB10}]
+	set_property IOSTANDARD LVCMOS33 [get_ports {JB10}]
 
 
 

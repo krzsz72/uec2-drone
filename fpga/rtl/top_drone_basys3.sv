@@ -17,13 +17,7 @@ module top_drone_basys3 (
     input  wire btnC,
     input wire sw,
     input wire btnU,
-    // RS-232 (USB-UART) pins (enable in XDC)
-    input  wire RsRx,
-    output wire RsTx,
-    output wire JA1, // rx_monitor (J1)
-    output wire JA2,  // tx_monitor (L2)
-    output wire [3:0] an,
-    output wire [7:0] seg
+    output wire JB10
 
     );
 
@@ -38,6 +32,8 @@ module top_drone_basys3 (
     wire locked;
     wire pclk;
     wire pclk_mirror;
+
+    logic [7:0] pwm_data;
 
     (* KEEP = "TRUE" *)
     (* ASYNC_REG = "TRUE" *)
@@ -119,18 +115,14 @@ module top_drone_basys3 (
     /**
      *  Project functional top module
      */
+    assign pwm_data=8'd15;
 
-    top_uart u_top_drone (
+    top_drone u_top_drone (
         .clk  (pclk),
         .rst  (btnC),
-        .rx   (RsRx),
-        .tx   (RsTx),
-        .btn  (sw),
-        .rx_monitor (JA1),
-        .tx_monitor (JA2),
-        .btnU (btnU),
-        .an (an),
-        .sseg (seg)
-    );
+        .d_in (pwm_data),
+        .enable(sw),
+        .pwm(JB10)
+        );
 
 endmodule
