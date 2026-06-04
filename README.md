@@ -1,5 +1,7 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/_04d9rfH)
-# uec2-lab6
+## komenda do git basha na windowsie w celu ustawienia patha lub czegos:
+export VIVADO_DIR=/c/Xilinx/2025.1/Vivado;
+export PATH=${VIVADO_DIR}/bin:${PATH} 
+
 
 **Wszystkie komendy należy wywoływać z głównego folderu projektu**.\
 _Każdy plik w projekcie posiada nagłówek z krótkim opisem jego funkcji._
