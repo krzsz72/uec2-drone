@@ -15,7 +15,8 @@
 module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
-    input wire sw,
+    input wire sw1,
+    input wire sw2,
     input wire btnU,
     output wire JB10
 
@@ -60,7 +61,7 @@ module top_drone_basys3 (
     MMCME2_BASE #(
         .CLKIN1_PERIOD(10.000),
         .CLKFBOUT_MULT_F(10.000),
-        .CLKOUT0_DIVIDE_F(25.000)
+        .CLKOUT0_DIVIDE_F(10.000)
     ) clk_in_mmcme2 (
         .CLKIN1(clk_in),
         .CLKOUT0(clk_out),
@@ -115,13 +116,14 @@ module top_drone_basys3 (
     /**
      *  Project functional top module
      */
-    assign pwm_data=8'd15;
+
+    assign pwm_data= (sw2) ? 8'd10 : 8'd15;
 
     top_drone u_top_drone (
         .clk  (pclk),
         .rst  (btnC),
         .d_in (pwm_data),
-        .enable(sw),
+        .enable(sw1),
         .pwm(JB10)
         );
 
