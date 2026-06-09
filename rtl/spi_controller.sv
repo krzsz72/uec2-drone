@@ -103,13 +103,14 @@ module spi_controller #(
 
    //reg logic
    always_comb begin
-      assign copi = (state == BUSY) ? copi_reg : 1'bz;
+      assign copi = copi_reg; //(state == BUSY) ? copi_reg : 1'bz;
 
       case(state)
          IDLE: begin
             sclk_nxt='1;
             busy_nxt='0;
             done_nxt='0;
+            copi_reg_nxt = 1'bz;
          end
          BUSY: begin
             sclk_nxt=~sclk;
