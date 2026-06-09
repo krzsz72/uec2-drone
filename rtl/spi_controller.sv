@@ -8,47 +8,46 @@
 //      |        WIDTH  = 8  bits                      | 
 //      |                                              |
 //      |                                              |
+//  ----| start                                   sclk |----
+//  ==8=| reg_tx                                reg_rx |=8==
+//  ----| poci                                    copi |----
 //      |                                              |
-//  ----| start                                       |
-// ==15=| d_in                                 PWM_out |----
-//      |                                          cnt |==15=
 //  ----| clk                                          |
 //      |______________________________________________|
 //
 //** Description ***************************************************************
 //
-//  A Pulse Width Modulator (PWM). When enabled, the count advances on the 
-//  rising edge of the system clock.
+//  An SPI interface controller with inout registers and serial communication copi poci wires.
 //
 //** Sample Instantiation ******************************************************
 //
-//    PWM #(
-//        .MAX_TICK(MAX_TICK),
-//        .MAX_PWM(PAX_PWM)
+//    spi_controller #(
+//        .WIDTH(8)
 //    )
-//    PWM(
+//    spi_controller(
 //        .clk(clk),
-//        .enable(enable),
-//        .d_in(d_in),
-//        .PWM(PWM),
-//        .cnt(cnt)
+//        .start(start),
+//        .sclk(sclk),
+//        .reg_rx(reg_rx),
+//        .reg_tx(reg_tx),
+//        .poci(poci),
+//        .copi(copi)
 //    );
 //
-//** Signal Inputs: ************************************************************
+//** Signals: ************************************************************
 //
 //  1) clk: High speed system clock (typically 100 MHz)
 //
-//  2) enable: Activates the PWM when logic high. PWM idles low when deactivated.
+//  2) start: Activates the full-duplex transmission when logic high.
 //
-//  3) d_in: Is used to determine the duty cycle of the PWM. currently 1us resolution
+//  3) sclk: SPI transmission clock. Due to posedge clk logic it is half of clk. 
 //
-//** Signal Outputs ************************************************************
+//  4) reg_rx/reg_tx : internal register holding the transceived data.
 //
-//  1) PWM: Provides a Pulse Width Modulated signal. The frequency is 
-//     determined as described in the comments.
+//  5) poci/copi : wires for serial transmission. Containt single bit informaation 
+//                 that is being currently transceived
 //
-//  2) cnt: Provides access to the PWM register. 
-//
+
 
 module spi_controller #(
    parameter logic [3:0] WIDTH=8 //inout registers width
@@ -61,18 +60,20 @@ module spi_controller #(
     input logic poci,
    //controller transmit
     input logic [WIDTH-1:0] reg_tx,
-    output logic copi
+    output logic copi,
+   //status flags
+    output logic busy,done
    );
 
    typedef enum logic [1:0] {IDLE, BUSY, DONE} fsm_state_t;
     fsm_state_t state, state_nxt = IDLE;
 
    logic [WIDTH-1:0] reg_rx_nxt;
-   logic copi_nxt, sclk_nxt, busy, busy_nxt, done, done_nxt;
+   logic copi_nxt, sclk_nxt, busy_nxt, done_nxt;
    logic [WIDTH-1:0] bit_ctr, bit_ctr_nxt;
 
    //seq logic
-   always_ff@(posedge clk)begin
+   always_ff @(posedge clk)begin
       copi<=copi_nxt;
       reg_rx<=reg_rx_nxt;
       sclk<=sclk_nxt;
@@ -83,7 +84,7 @@ module spi_controller #(
    end
 
    //fsm logic
-   always_comb@(posedge clk)begin
+   always_comb begin
       case(state)
          IDLE: begin
             bit_ctr_nxt='0;
@@ -101,7 +102,7 @@ module spi_controller #(
    end
 
    //reg logic
-   always_comb@(posedge clk)begin
+   always_comb begin
       case(state)
          IDLE: begin
             sclk_nxt='1;

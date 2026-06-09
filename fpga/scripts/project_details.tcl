@@ -31,6 +31,7 @@ set xdc_files {
 
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
+    ../rtl/spi_controller.sv
     ../rtl/top_drone.sv
     rtl/top_drone_basys3.sv
 }
