@@ -69,12 +69,12 @@ module spi_controller #(
     fsm_state_t state, state_nxt = IDLE;
 
    logic [WIDTH-1:0] reg_rx_nxt;
-   logic copi_nxt, sclk_nxt, busy_nxt, done_nxt;
+   logic copi_reg_nxt, copi_reg, sclk_nxt, busy_nxt, done_nxt;
    logic [WIDTH-1:0] bit_ctr, bit_ctr_nxt;
 
    //seq logic
    always_ff @(posedge clk)begin
-      copi<=copi_nxt;
+      copi_reg<=copi_reg_nxt;
       reg_rx<=reg_rx_nxt;
       sclk<=sclk_nxt;
       done<=done_nxt;
@@ -92,7 +92,7 @@ module spi_controller #(
          end
          BUSY: begin
             if(bit_ctr==WIDTH) state_nxt=DONE;
-            bit_ctr_nxt = bit_ctr+1;
+            if(sclk) bit_ctr_nxt = bit_ctr+1;
          end
          DONE: begin
             state_nxt=IDLE;
@@ -103,6 +103,8 @@ module spi_controller #(
 
    //reg logic
    always_comb begin
+      assign copi = (state == BUSY) ? copi_reg : 1'bz;
+
       case(state)
          IDLE: begin
             sclk_nxt='1;
@@ -112,8 +114,10 @@ module spi_controller #(
          BUSY: begin
             sclk_nxt=~sclk;
             busy_nxt='1;
-            reg_rx_nxt = {reg_rx[WIDTH-2:0],poci};
-            copi_nxt = reg_tx[WIDTH-1-bit_ctr];
+            if(sclk) begin
+               reg_rx_nxt = {reg_rx[WIDTH-2:0],poci};
+               copi_reg_nxt = reg_tx[WIDTH-1-bit_ctr];
+            end
          end
          DONE: begin
             done_nxt='1;
