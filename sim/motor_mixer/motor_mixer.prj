@@ -1,0 +1,2 @@
+sv work ../../rtl/motor_mixer.sv
+sv work motor_mixer_tb.sv
