@@ -14,15 +14,16 @@ module spi_controller_tb;
    logic clk;
    logic start;
    logic sclk;
-   logic [7:0] reg_rx;
+   logic [15:0] reg_rx;
    logic poci;
-   logic [7:0] reg_tx;
+   logic [15:0] reg_tx;
    logic copi;
    logic busy;
    logic done;
+   logic cs_n;
 
    // Instancjacja badanego modułu (DUT)
-   spi_controller #(.WIDTH(8)) dut (
+   spi_controller #(.WIDTH(16)) dut (
       .clk(clk),
       .start(start),
       .sclk(sclk),
@@ -31,7 +32,8 @@ module spi_controller_tb;
       .reg_tx(reg_tx),
       .copi(copi),
       .busy(busy),
-      .done(done)
+      .done(done),
+      .cs_n(cs_n)
    );
 
    // Generacja zegara głównego 100 MHz (okres 10 ns)
@@ -45,7 +47,7 @@ module spi_controller_tb;
       // Stan początkowy
       start = 0;
       poci = 0;
-      reg_tx = 8'h6E; // Wartość do wysłania (binarnie: 01101110)
+      reg_tx = 16'h6E00; // Wartość do wysłania (binarnie: 01101110)
       
       $display("--- Rozpoczecie symulacji SPI ---");
       $display("Dane do wyslania (reg_tx): %h", reg_tx);
