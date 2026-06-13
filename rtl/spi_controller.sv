@@ -5,14 +5,16 @@
 //      |______________________________________________|
 //      |                                              |
 //      |    Parameters and defaults                   |
-//      |        WIDTH  = 16  bits                      | 
+//      |        WIDTH  = 16  bits                     | 
+//      |                                              |
 //      |                                              |
 //      |                                              |
 //  ----| start                                   sclk |----
 //  ==8=| reg_tx                                reg_rx |=8==
 //  ----| poci                                    copi |----
-//      |                                              |
-//  ----| clk                                          |
+//      |                                         done |----
+//  ----| clk                                     busy |----
+//      |                                         cs_n |----
 //      |______________________________________________|
 //
 //** Description ***************************************************************
@@ -28,10 +30,13 @@
 //        .clk(clk),
 //        .start(start),
 //        .sclk(sclk),
+//        .cs_n(cs_n),
 //        .reg_rx(reg_rx),
 //        .reg_tx(reg_tx),
 //        .poci(poci),
-//        .copi(copi)
+//        .copi(copi),
+//        .busy(busy),
+//        .done(done)
 //    );
 //
 //** Signals: ************************************************************
@@ -72,6 +77,7 @@ module spi_controller #(
    logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
    logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
    logic [4:0] bit_ctr, bit_ctr_nxt; // 5 bitów, żeby policzyć do 16
+
    //prescaler  100MHz na 1MHz =50 (sclk dziala przez flipflop wiec dodatkowe przez pol)
    localparam CLK_DIVIDER = 50;
    logic [5:0] clk_div, clk_div_nxt;

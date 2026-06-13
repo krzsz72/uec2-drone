@@ -39,6 +39,8 @@ set sv_files {
 # Specify Verilog design files location         -- EDIT
 set verilog_files {
     ../rtl/pwm.v
+    ../rtl/disp_hex_mux.v
+
 }
 
 # Specify VHDL design files location            -- EDIT

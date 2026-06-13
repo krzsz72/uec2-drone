@@ -18,7 +18,10 @@ module top_drone_basys3 (
     input wire sw1,
     input wire sw2,
     input wire btnU,
-    output wire JB10
+    output wire JB10,
+    output wire [7:0] JC,
+    output wire [7:0] sseg,
+    output wire [3:0] an
 
     );
 
@@ -113,18 +116,31 @@ module top_drone_basys3 (
     );
 
 
-    /**
+    /** #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      *  Project functional top module
+     *  #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      */
 
     assign pwm_data= (sw2) ? 8'd10 : 8'd15;
+
+    logic [23:0] spi_odebrane;
 
     top_drone u_top_drone (
         .clk  (pclk),
         .rst  (btnC),
         .d_in (pwm_data),
         .enable(sw1),
-        .pwm(JB10)
+        .pwm(JB10),
+        .copi(JC[3]),
+        .sclk(JC[2]),
+        .poci(JC[1]),
+        .cs_n(JC[0]),
+        .spi_start(btnU),
+        .spi_odebrane(spi_odebrane),
+        .an,
+        .sseg
         );
 
+        
+    
 endmodule

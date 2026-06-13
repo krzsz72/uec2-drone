@@ -19,7 +19,17 @@ module top_drone#(
         input  logic rst,
         input  logic enable,
         input  logic [7:0] d_in,
-        output logic pwm
+        output logic pwm,
+        //---PWM---
+        input logic spi_start,
+        output logic sclk,
+        input logic poci,
+        output logic cs_n,
+        output logic [23:0] spi_odebrane,
+        output logic copi,
+        //---SPI---
+        output logic [3:0] an,
+        output logic [7:0] sseg
     );
 
     timeunit 1ns;
@@ -45,5 +55,38 @@ module top_drone#(
         .d_in,
         .pwm
      );
+
+     logic [23:0] nadajwartosc = 24'b10000001100110011001100;
+     wire spi_done;
+     wire spi_loopback;
+     spi_controller #(
+       .WIDTH(24)
+      )
+      spi_controller(
+         .clk(clk),
+         .start(spi_start | spi_done),
+         .sclk(sclk),
+         .cs_n(cs_n),
+         .reg_rx(spi_odebrane),
+         .reg_tx(nadajwartosc),
+         .poci(spi_loopback),
+         .copi(spi_loopback),
+         .busy(busy),
+         .done(spi_done)
+      );
+
+      disp_hex_mux u_display (
+        .clk(clk),
+        .reset(),
+        .hex3(spi_odebrane[15:12]), 
+        .hex2(spi_odebrane[11:8]), 
+        .hex1(spi_odebrane[7:4]), 
+        .hex0(spi_odebrane[3:0]), 
+        .dp_in(4'b1111),       // Wygaszone kropki
+        .an(an),
+        .sseg(sseg)
+    );
+
+
 
 endmodule
