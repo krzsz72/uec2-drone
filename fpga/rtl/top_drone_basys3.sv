@@ -21,7 +21,8 @@ module top_drone_basys3 (
     output wire JB10,
     output wire [7:0] JC,
     output wire [7:0] sseg,
-    output wire [3:0] an
+    output wire [3:0] an,
+    output wire [1:0] led
 
     );
 
@@ -122,8 +123,15 @@ module top_drone_basys3 (
      */
 
     assign pwm_data= (sw2) ? 8'd10 : 8'd15;
+    wire btnU_tick;
 
-    logic [23:0] spi_odebrane;
+      debounce btnU_db (
+         .clk(clk),
+         .reset(1'b1),
+         .sw(btnU),
+         .db_level(),
+         .db_tick(btnU_tick)
+      );
 
     top_drone u_top_drone (
         .clk  (pclk),
@@ -135,10 +143,10 @@ module top_drone_basys3 (
         .sclk(JC[2]),
         .poci(JC[1]),
         .cs_n(JC[0]),
-        .spi_start(btnU),
-        .spi_odebrane(spi_odebrane),
+        .spi_start(btnU_tick),
         .an,
-        .sseg
+        .sseg,
+        .led(led[0])
         );
 
         

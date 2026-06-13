@@ -40,6 +40,7 @@ set sv_files {
 set verilog_files {
     ../rtl/pwm.v
     ../rtl/disp_hex_mux.v
+    ../rtl/debounce.v
 
 }
 
