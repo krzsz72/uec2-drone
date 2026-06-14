@@ -76,7 +76,7 @@ module pid_tb;
         rst = 1;
         // Nastawy PID dla bardzo powolnego dojścia bez oscylacji (silnie przetłumione)
         kp = 16'd100;   // Małe wzmocnienie, aby obiekt powoli i łagodnie ruszał
-        ki = 16'd1;    // WYŁĄCZONY człon całkujący! To on powodował przepełnienie (wind-up)
+        ki = 16'd5;    // WYŁĄCZONY człon całkujący! To on powodował przepełnienie (wind-up)
         kd = 16'd1560;  // Silny człon różniczkujący, działa jak bardzo dobry hamulec
         
         desired_val = 16'd0;

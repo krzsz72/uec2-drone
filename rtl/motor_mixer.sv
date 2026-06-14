@@ -32,18 +32,19 @@ module motor_mixer #(
     // Signed version of throttle
     wire signed [16:0] throttle_signed = {1'b0, throttle};
 
-    // Calculate mixed values
-    // M1 = Throttle - pid_pitch + pid_roll - pid_yaw
-    assign m1_calc = throttle_signed - pid_pitch + pid_roll - pid_yaw;
+    // Calculate mixed values for PUSHER configuration
+    // (Motors mounted upside-down, so yaw reaction is reversed)
+    // M1 = Throttle - pid_pitch + pid_roll + pid_yaw
+    assign m1_calc = throttle_signed - pid_pitch + pid_roll + pid_yaw;
     
-    // M2 = Throttle - pid_pitch - pid_roll + pid_yaw
-    assign m2_calc = throttle_signed - pid_pitch - pid_roll + pid_yaw;
+    // M2 = Throttle - pid_pitch - pid_roll - pid_yaw
+    assign m2_calc = throttle_signed - pid_pitch - pid_roll - pid_yaw;
     
-    // M3 = Throttle + pid_pitch + pid_roll + pid_yaw
-    assign m3_calc = throttle_signed + pid_pitch + pid_roll + pid_yaw;
+    // M3 = Throttle + pid_pitch + pid_roll - pid_yaw
+    assign m3_calc = throttle_signed + pid_pitch + pid_roll - pid_yaw;
     
-    // M4 = Throttle + pid_pitch - pid_roll - pid_yaw
-    assign m4_calc = throttle_signed + pid_pitch - pid_roll - pid_yaw;
+    // M4 = Throttle + pid_pitch - pid_roll + pid_yaw
+    assign m4_calc = throttle_signed + pid_pitch - pid_roll + pid_yaw;
 
     // Clamping function
     function [14:0] clamp;
