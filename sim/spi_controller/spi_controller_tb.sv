@@ -70,9 +70,10 @@ module spi_controller_tb;
          end
          begin
             // Podawanie danych na MISO na narastającym zboczu SCLK
-            repeat(8) begin
+            for(int i = 0; i<16;i++) begin
+               automatic logic [15:0] data_in = 16'h006c;
                @(posedge sclk);
-               poci = $random % 2; 
+               poci = data_in[16-i]; 
             end
          end
       join

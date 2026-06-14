@@ -29,7 +29,8 @@ module top_drone#(
         //---SPI---
         output logic [3:0] an,
         output logic [7:0] sseg,
-        output logic led
+        output logic [15:0] led,
+        input logic button
     );
 
     timeunit 1ns;
@@ -60,7 +61,7 @@ module top_drone#(
      logic [7:0] data_write;
      logic [23:0] nadajwartosc = {1'b0,destination,data_write,8'b0};
      logic [23:0] odczytwartosc = {1'b1,destination,16'b0};
-     //wire spi_done;
+     wire spi_done;
     // wire spi_loopback;
      logic [23:0] spi_odebrane;
 
@@ -77,12 +78,22 @@ module top_drone#(
          .poci(poci),
          .copi(copi),
          .busy(),
-         .done()
+         .done(spi_done)
       );
 
-      assign led = (spi_odebrane[15:8] == 8'h6c);
+always_ff @(posedge clk) begin
+    // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
+    if (spi_done == 1'b1) begin
+        led[0] <= (spi_odebrane[15:8] == 8'h6c);
+    end
 
+    // Dla ticku start: złap go i już nie puszczaj (sticky bit)
+    if (spi_start) begin
+        led[15] <= 1'b1;
+    end
+end
 
+assign led[14]=button;
     
       disp_hex_mux u_display (
         .clk(clk),
