@@ -30,7 +30,8 @@ module top_drone#(
         output logic [3:0] an,
         output logic [7:0] sseg,
         output logic [15:0] led,
-        input logic button
+        input logic button,
+        input logic btnReset
     );
 
     timeunit 1ns;
@@ -82,26 +83,26 @@ module top_drone#(
       );
 
 always_ff @(posedge clk) begin
-    // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
-    if (spi_done == 1'b1) begin
-        led[0] <= (spi_odebrane[15:8] == 8'h6c);
-    end
-
-    // Dla ticku start: złap go i już nie puszczaj (sticky bit)
-    if (spi_start) begin
-        led[15] <= 1'b1;
-    end
+    //reset
+       if (btnReset)begin
+        led[15:0]<=16'b0;
+    end else begin
+         if (spi_done == 1'b1) begin
+        // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
+            led[0] <= (spi_odebrane[15:8] == 8'h6c);
+            led[15:1]<=spi_odebrane[15:1];
+         end
+        end
 end
 
-assign led[14]=button;
     
       disp_hex_mux u_display (
         .clk(clk),
-        .reset(1'b1),
+        .reset(1'b0),
+        .hex1(spi_odebrane[19:16]), 
+        .hex0(spi_odebrane[23:20]), 
         .hex3(spi_odebrane[15:12]), 
         .hex2(spi_odebrane[11:8]), 
-        .hex1(spi_odebrane[7:4]), 
-        .hex0(spi_odebrane[3:0]), 
         .dp_in(4'b1111),       // Wygaszone kropki
         .an(an),
         .sseg(sseg)

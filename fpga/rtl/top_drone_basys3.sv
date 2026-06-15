@@ -153,7 +153,7 @@ module top_drone_basys3 (
 
     top_drone u_top_drone (
         .clk  (pclk),
-        .rst  (btnC),
+        .rst  (),
         .d_in (pwm_data),
         .enable(sw1),
         .pwm(JB10),
@@ -165,7 +165,8 @@ module top_drone_basys3 (
         .an,
         .sseg,
         .led(led[15:0]),
-        .button(btnU)
+        .button(btnU),
+        .btnReset(btnC)
         );
 
         
