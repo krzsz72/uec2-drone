@@ -99,10 +99,10 @@ end
       disp_hex_mux u_display (
         .clk(clk),
         .reset(1'b0),
-        .hex1(spi_odebrane[19:16]), 
-        .hex0(spi_odebrane[23:20]), 
-        .hex3(spi_odebrane[15:12]), 
-        .hex2(spi_odebrane[11:8]), 
+        .hex3(spi_odebrane[23:20]), 
+        .hex2(spi_odebrane[19:16]), 
+        .hex1(spi_odebrane[15:12]), 
+        .hex0(spi_odebrane[11:8]), 
         .dp_in(4'b1111),       // Wygaszone kropki
         .an(an),
         .sseg(sseg)
