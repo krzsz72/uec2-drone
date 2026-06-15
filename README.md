@@ -4,6 +4,9 @@ export VIVADO_DIR=/c/Xilinx/2025.1/Vivado;
 export PATH=${VIVADO_DIR}/bin:${PATH} 
 ```
 
+zapytac sie:
+ - czy wyjscie high-z?
+
 **Wszystkie komendy należy wywoływać z głównego folderu projektu**.\
 _Każdy plik w projekcie posiada nagłówek z krótkim opisem jego funkcji._
 
