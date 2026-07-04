@@ -60,18 +60,29 @@ module top_drone#(
    
      logic [6:0] destination = 7'h0F;
      logic [7:0] data_write;
-     logic [23:0] nadajwartosc = {1'b0,destination,data_write,8'b0};
-     logic [23:0] odczytwartosc = {1'b1,destination,16'b0};
+     logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
+     logic [31:0] odczytwartosc;// = {1'b1,destination,16'b0};
      wire spi_done;
     // wire spi_loopback;
-     logic [23:0] spi_odebrane;
+     logic [31:0] spi_odebrane;
+    logic [31:0] data_length;
+    
+    gyro #(.WIDTH(32)
+    ) gyro (
+        .busy(),
+        .clk(clk),
+        .d_length(data_length),
+        .d_out(odczytwartosc),
+        .done(),
+        .start(spi_start)
+    );
 
      spi_controller #(
-       .WIDTH(24)
+       .WIDTH(32)
       )
       spi_controller(
          .clk(clk),
-         .start(spi_start),
+         .d_length(data_length),
          .sclk(sclk),
          .cs_n(cs_n),
          .reg_rx(spi_odebrane),

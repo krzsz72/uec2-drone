@@ -9,7 +9,7 @@
 //      |                                              |
 //      |                                              |
 //      |                                              |
-//  ----| start                                   sclk |----
+//  ----| d_length (start)                        sclk |----
 //  ==8=| reg_tx                                reg_rx |=8==
 //  ----| poci                                    copi |----
 //      |                                         done |----
@@ -55,10 +55,11 @@
 
 
 module spi_controller #(
-   parameter logic [4:0] WIDTH=16 //inout registers width
+   parameter logic [5:0] WIDTH=16 //inout registers width
    )
    (
-    input logic clk, start,
+    input logic clk, //start,
+    input logic [WIDTH-1:0] d_length,
     output logic sclk,
     output logic cs_n,
    //controller receive
@@ -82,6 +83,7 @@ module spi_controller #(
    localparam CLK_DIVIDER = 50;
    logic [5:0] clk_div, clk_div_nxt;
    logic spi_tick;
+   //logic [WIDTH-1:0] d_length = data_length;
 
    // seq block
    always_ff @(posedge clk) begin
@@ -108,7 +110,7 @@ module spi_controller #(
          IDLE: begin
             bit_ctr_nxt = '0;
             clk_div_nxt = '0;
-            if (start) state_nxt = BUSY;
+            if (d_length) state_nxt = BUSY;
          end
          
          BUSY: begin
@@ -121,7 +123,7 @@ module spi_controller #(
 
             if (spi_tick && sclk == 1'b1) begin
                bit_ctr_nxt = bit_ctr + 1;
-               if (bit_ctr == WIDTH - 1) begin
+               if (bit_ctr == d_length) begin
                   state_nxt = DONE;
                end
             end
@@ -151,7 +153,7 @@ module spi_controller #(
             cs_n_nxt = 1'b1;
             busy_nxt = 1'b0;
             
-            if (start) begin
+            if (d_length) begin
                busy_nxt     = 1'b1;
                cs_n_nxt     = 1'b0;          
                shift_tx_nxt = reg_tx;
