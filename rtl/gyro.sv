@@ -67,7 +67,7 @@ module gyro #(
    );
 
 
-   typedef enum logic [1:0] {IDLE, STARTUP, READ, DONE} fsm_state_t;
+   typedef enum logic [1:0] {IDLEG, STARTUP, READ, DONEG} fsm_state_t;
    fsm_state_t state, state_nxt = STARTUP;
 
    logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
@@ -104,7 +104,7 @@ module gyro #(
 
       case(state)
          STARTUP: begin
-          //  if (armed) state_nxt = IDLE;
+          //  if (armed) state_nxt = IDLEG;
             if(start) begin
                case(init_cntr)
                //wypisz rejestry po kolei trzba cntr
@@ -120,8 +120,8 @@ module gyro #(
                endcase
                init_cntr_nxt=init_cntr+1;
          end
-         
-         IDLE: begin
+      end
+         IDLEG: begin
             bit_ctr_nxt = '0;
             clk_div_nxt = '0;
             if (start) state_nxt = READ;
@@ -134,21 +134,20 @@ module gyro #(
             end else begin
                clk_div_nxt = clk_div + 1;
             end
-         end
-
+         
             if (spi_tick) begin
                bit_ctr_nxt = bit_ctr + 1;
                if (bit_ctr == WIDTH - 1) begin
-                  state_nxt = DONE;
+                  state_nxt = DONEG;
                end
             end
          end
          
-         DONE: begin
-            state_nxt = IDLE;
+         DONEG: begin
+            state_nxt = IDLEG;
          end
          
-         default: state_nxt = IDLE;
+         default: state_nxt = IDLEG;
       endcase
    end
 
