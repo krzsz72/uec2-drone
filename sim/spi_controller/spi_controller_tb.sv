@@ -25,7 +25,7 @@ module spi_controller_tb;
    // Instancjacja badanego modułu (DUT)
    spi_controller #(.WIDTH(16)) dut (
       .clk(clk),
-      .start(start),
+      .d_length(start),             // POPRAWIC Z START NA ODP D-LENGTH
       .sclk(sclk),
       .reg_rx(reg_rx),
       .poci(poci),

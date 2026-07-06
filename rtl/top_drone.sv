@@ -69,11 +69,9 @@ module top_drone#(
     
     gyro #(.WIDTH(32)
     ) gyro (
-        .busy(),
         .clk(clk),
         .d_length(data_length),
         .d_out(odczytwartosc),
-        .done(),
         .start(spi_start)
     );
 
@@ -98,10 +96,12 @@ always_ff @(posedge clk) begin
        if (btnReset)begin
         led[15:0]<=16'b0;
     end else begin
+        if(data_length) led[1] <= 1'b1;
+        if(spi_start) led[2] <= 1'b1;
          if (spi_done == 1'b1) begin
         // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
             led[0] <= (spi_odebrane[15:8] == 8'h6c);
-            led[15:1]<=spi_odebrane[15:1];
+            led[15:3]<=spi_odebrane[15:3];
          end
         end
 end

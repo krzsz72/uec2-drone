@@ -61,23 +61,23 @@ module gyro #(
     input logic clk, start,
    //what data to sned
     output logic [WIDTH-1:0] d_out,
-    output logic [WIDTH-1:0] d_length,
+    output logic [WIDTH-1:0] d_length
    //status flags
-    output logic busy,done
+    //output logic busy,done
    );
 
 
    typedef enum logic [1:0] {IDLEG, STARTUP, READ, DONEG} fsm_state_t;
    fsm_state_t state, state_nxt = STARTUP;
 
-   logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
-   logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
-   logic [4:0] bit_ctr, bit_ctr_nxt; // 5 bitów, żeby policzyć do 16
+  // logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
+  // logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
+   logic [5:0] bit_ctr, bit_ctr_nxt; // 5 bitów, żeby policzyć do 32
 
    //prescaler  100MHz na 1MHz =50 (sclk dziala przez flipflop wiec dodatkowe przez pol)
    localparam CLK_DIVIDER = 50;
    logic [5:0] clk_div, clk_div_nxt;
-   logic spi_tick;
+  // logic spi_tick;
 
   // logic armed;
    logic [WIDTH-1:0] init_cntr, init_cntr_nxt;
@@ -88,9 +88,9 @@ module gyro #(
    always_ff @(posedge clk) begin
          state    <= state_nxt;
          init_cntr <= init_cntr_nxt;
-         shift_tx <= shift_tx_nxt;
-         busy     <= busy_nxt;
-         done     <= done_nxt;
+         // shift_tx <= shift_tx_nxt;
+         // busy     <= busy_nxt;
+         // done     <= done_nxt;
          bit_ctr  <= bit_ctr_nxt;
          clk_div  <= clk_div_nxt;
    end
@@ -99,8 +99,11 @@ module gyro #(
    always_comb begin
       state_nxt   = state;
       bit_ctr_nxt = bit_ctr;
+      init_cntr_nxt = init_cntr;
       clk_div_nxt = clk_div;
-      spi_tick    = 1'b0;
+      d_length='0;
+      d_out={READBIT,31'b0};
+     // spi_tick    = 1'b0;
 
       case(state)
          STARTUP: begin
@@ -108,10 +111,13 @@ module gyro #(
             if(start) begin
                case(init_cntr)
                //wypisz rejestry po kolei trzba cntr
-               0: begin
+               8'd0: begin
                    d_out={READBIT,7'h0F,24'b0}; //WHOAMI ... dokoncyzc: pomysl z wysyaniem podniesienia CS_N w ramce od gyro? !
-                   d_length='d16;        //                         =====================================================
+                   d_length='d16;        //       =====================================================
                   end
+               8'd1: begin
+                  state_nxt=IDLEG;
+               end
                // CTRL2_G 11h - 0xAC - 0b10101100
                // CTRL3_C 12h - 0x44 - 0b01000100
                // CTRL4_C 13h - 0x0E - 0b00001110
@@ -124,27 +130,27 @@ module gyro #(
          IDLEG: begin
             bit_ctr_nxt = '0;
             clk_div_nxt = '0;
-            if (start) state_nxt = READ;
+            state_nxt = READ;
          end
          
          READ: begin
-            if (clk_div == CLK_DIVIDER-1) begin
-               clk_div_nxt = '0;
-               spi_tick = 1'b1;
-            end else begin
-               clk_div_nxt = clk_div + 1;
-            end
+            // if (clk_div == CLK_DIVIDER-1) begin
+            //    clk_div_nxt = '0;
+            //    spi_tick = 1'b1;
+            // end else begin
+            //    clk_div_nxt = clk_div + 1;
+            // end
          
-            if (spi_tick) begin
+            // if (spi_tick) begin
                bit_ctr_nxt = bit_ctr + 1;
                if (bit_ctr == WIDTH - 1) begin
                   state_nxt = DONEG;
                end
-            end
+            // end
          end
          
          DONEG: begin
-            state_nxt = IDLEG;
+             state_nxt = IDLEG;
          end
          
          default: state_nxt = IDLEG;
