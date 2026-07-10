@@ -49,7 +49,7 @@ module gyro_tb;
       @(posedge clk);
       rst_n=1;
       // Wystawienie sygnału startu na jeden cykl zegara
-     for(int i=0; i<3; i++)begin    
+     for(int i=0; i<12; i++)begin    
          @(posedge clk);
          ready = 1;
          @(posedge clk);
