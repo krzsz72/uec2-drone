@@ -9,7 +9,7 @@
 //      |                                              |
 //      |                 WIP                          |
 //      |                                              |
-//  ----| start                                   sclk |----
+//  ----| ready                                   sclk |----
 //  ==8=| reg_tx                                reg_rx |=8==
 //  ----| poci                                    copi |----
 //      |                                         done |----
@@ -28,7 +28,7 @@
 //    )
 //    spi_controller(
 //        .clk(clk),
-//        .start(start),
+//        .ready(ready),
 //        .sclk(sclk),
 //        .cs_n(cs_n),
 //        .reg_rx(reg_rx),
@@ -43,7 +43,7 @@
 //
 //  1) clk: High speed system clock (typically 100 MHz)
 //
-//  2) start: Activates the full-duplex transmission when logic high.
+//  2) ready: Activates the full-duplex transmission when logic high.
 //
 //  3) sclk: SPI transmission clock. Due to posedge clk logic it is half of clk. 
 //
@@ -55,105 +55,101 @@
 
 
 module gyro #(
-   parameter logic [5:0] WIDTH=32 //inout registers width
+   parameter int BYTEWIDTH=6,
+   parameter logic [BYTEWIDTH-1:0] WIDTH=56 //inout registers width
    )
    (
-    input logic clk, start,
-   //what data to sned
+    input logic clk, ready, rst_n, gyro_data, //start de facto ready - done od spi   gyro_data sprawdzana gotowosc danych na zewn i tutaj tylko flaga wysylana zeby nastepna ramke wyslalo
     output logic [WIDTH-1:0] d_out,
-    output logic [WIDTH-1:0] d_length
-   //status flags
-    //output logic busy,done
+    output logic [BYTEWIDTH-1:0] d_length
    );
 
-
-   typedef enum logic [1:0] {IDLEG, STARTUP, READ, DONEG} fsm_state_t;
-   fsm_state_t state, state_nxt = STARTUP;
-
-  // logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
-  // logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
-   logic [5:0] bit_ctr, bit_ctr_nxt; // 5 bitów, żeby policzyć do 32
-
-   //prescaler  100MHz na 1MHz =50 (sclk dziala przez flipflop wiec dodatkowe przez pol)
-   localparam CLK_DIVIDER = 50;
-   logic [5:0] clk_div, clk_div_nxt;
-  // logic spi_tick;
-
-  // logic armed;
-   logic [WIDTH-1:0] init_cntr, init_cntr_nxt;
    const bit WRITEBIT = 1'b0;
    const bit READBIT = 1'b1;
 
+   typedef enum logic [1:0] {STARTUP, GYRO_POLLING, READ} fsm_state_t;
+   fsm_state_t state;
+   fsm_state_t state_nxt = STARTUP;
+
+   logic [WIDTH-1:0] data_out = {READBIT,55'b0};
+   logic [BYTEWIDTH-1:0] data_length =0;
+   logic [WIDTH-1:0] init_cntr, init_cntr_nxt;
+
    // seq block
    always_ff @(posedge clk) begin
+      if(!rst_n) begin
+         state    <= STARTUP;
+         init_cntr <= '0;
+         d_length <='0;
+         d_out    <={READBIT,55'b0};
+
+      end else begin
          state    <= state_nxt;
          init_cntr <= init_cntr_nxt;
-         // shift_tx <= shift_tx_nxt;
-         // busy     <= busy_nxt;
-         // done     <= done_nxt;
-         bit_ctr  <= bit_ctr_nxt;
-         clk_div  <= clk_div_nxt;
+         d_length <= data_length;
+         d_out    <= data_out;
+
+      end
    end
 
    // fsm block
    always_comb begin
       state_nxt   = state;
-      bit_ctr_nxt = bit_ctr;
       init_cntr_nxt = init_cntr;
-      clk_div_nxt = clk_div;
-      d_length='0;
-      d_out={READBIT,31'b0};
-     // spi_tick    = 1'b0;
-
+      
       case(state)
          STARTUP: begin
-          //  if (armed) state_nxt = IDLEG;
-            if(start) begin
-               case(init_cntr)
-               //wypisz rejestry po kolei trzba cntr
-               8'd0: begin
-                   d_out={READBIT,7'h0F,24'b0}; //WHOAMI ... dokoncyzc: pomysl z wysyaniem podniesienia CS_N w ramce od gyro? !
-                   d_length='d16;        //       =====================================================
+          //  if (armed) state_nxt = GYRO_POLLING;
+            if(ready) begin
+               case(init_cntr)    //wypisz rejestry po kolei
+               'd0: begin
+                   data_out={READBIT,7'h0F,48'b0}; //WHOAMI ... dokoncyzc: pomysl z wysyaniem podniesienia CS_N w ramce od gyro? !
+                   data_length='d16;
                   end
-               8'd1: begin
-                  state_nxt=IDLEG;
+               'd1: begin
+                  data_out={WRITEBIT,7'h11,8'b10101100,40'b0};     // CTRL2_G 11h - 0xAC - 0b10101100
+                  data_length='d16;  
                end
-               // CTRL2_G 11h - 0xAC - 0b10101100
-               // CTRL3_C 12h - 0x44 - 0b01000100
-               // CTRL4_C 13h - 0x0E - 0b00001110
-               // CTRL6_C 15h - 0x01 - 0b00000001
-               // CTRL7_G 16h - 0x00 - 0b00000000
+                'd2: begin
+                  data_out={WRITEBIT,7'h12,8'b01000100,40'b0};     // CTRL3_C 12h - 0x44 - 0b01000100
+                  data_length='d16;  
+               end
+                'd3: begin
+                  data_out={WRITEBIT,7'h13,8'b00001110,40'b0};     // CTRL4_C 13h - 0x0E - 0b00001110
+                  data_length='d16;  
+               end
+                'd4: begin
+                  data_out={WRITEBIT,7'h15,8'b00000001,40'b0};     // CTRL6_C 15h - 0x01 - 0b00000001
+                  data_length='d16;  
+               end
+                'd5: begin
+                  data_out={WRITEBIT,7'h16,8'b00000000,40'b0};     // CTRL7_G 16h - 0x00 - 0b00000000
+                  data_length='d16;  
+                  state_nxt=GYRO_POLLING;
+               end
+               default: begin                //when finished
+                  state_nxt=GYRO_POLLING;
+               end
                endcase
                init_cntr_nxt=init_cntr+1;
          end
       end
-         IDLEG: begin
-            bit_ctr_nxt = '0;
-            clk_div_nxt = '0;
-            state_nxt = READ;
+         GYRO_POLLING: begin //polling czy dane sa gotowe
+            if(ready) begin
+               data_out={READBIT,7'h1e,48'b0}; // status_reg 1Eh - 00000-TDA-GDA-XLDA    --- to idzie do spi_odebrane. jezeli bit[1] bedzie 1 to dane sa gotowe
+               data_length='d16;  
+            end
+            if(gyro_data) state_nxt = READ;
          end
          
-         READ: begin
-            // if (clk_div == CLK_DIVIDER-1) begin
-            //    clk_div_nxt = '0;
-            //    spi_tick = 1'b1;
-            // end else begin
-            //    clk_div_nxt = clk_div + 1;
-            // end
-         
-            // if (spi_tick) begin
-               bit_ctr_nxt = bit_ctr + 1;
-               if (bit_ctr == WIDTH - 1) begin
-                  state_nxt = DONEG;
-               end
-            // end
+         READ: begin //wysyla ramke o dlugosci 3 bajtow by sczytac xyz rejestry.  PAMIETAJ O ZEROWANIU spi_odebrane PO KAZDYM ODCZYCIE
+            if(ready) begin
+               data_out={READBIT,7'h22,48'b0}; // OUTX_L_G 22h - OUTX_L_G register D7 D6 D5 D4 D3 D2 D1 D0 \ D15 D14 D13 D12 D11 D10 D9 D8
+               data_length='d56; //1bajt na adres + 6 bajtow na XL XH; YL YH; ZL ZH  
+            end
+            state_nxt = GYRO_POLLING;
          end
-         
-         DONEG: begin
-             state_nxt = IDLEG;
-         end
-         
-         default: state_nxt = IDLEG;
+         default: state_nxt = STARTUP;
       endcase
    end
 

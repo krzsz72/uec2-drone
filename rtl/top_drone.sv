@@ -61,22 +61,25 @@ module top_drone#(
      logic [6:0] destination = 7'h0F;
      logic [7:0] data_write;
      logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
-     logic [31:0] odczytwartosc;// = {1'b1,destination,16'b0};
+     logic [55:0] odczytwartosc;// = {1'b1,destination,16'b0};
      wire spi_done;
     // wire spi_loopback;
-     logic [31:0] spi_odebrane;
-    logic [31:0] data_length;
+     logic [47:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b
+    logic [55:0] data_length;
     
-    gyro #(.WIDTH(32)
+    gyro #(
+        .WIDTH(56)
     ) gyro (
         .clk(clk),
+        .rst_n(~btnReset),
         .d_length(data_length),
         .d_out(odczytwartosc),
-        .start(spi_start)
+        .ready(spi_start),
+        .gyro_data(spi_odebrane[17])
     );
 
      spi_controller #(
-       .WIDTH(32)
+       .WIDTH(56)
       )
       spi_controller(
          .clk(clk),
@@ -96,12 +99,12 @@ always_ff @(posedge clk) begin
        if (btnReset)begin
         led[15:0]<=16'b0;
     end else begin
-        if(data_length) led[1] <= 1'b1;
+        if(data_length) led[1] <= 1'b1;           // dziala? 
         if(spi_start) led[2] <= 1'b1;
          if (spi_done == 1'b1) begin
         // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
-            led[0] <= (spi_odebrane[15:8] == 8'h6c);
-            led[15:3]<=spi_odebrane[15:3];
+            led[0] <= (spi_odebrane[15:8] == 8'h6c);                      // zapala kolejne ledy co 1 wypelniajac caly bufor. na oscylo nie widac cs_n..?
+            led[15:3]<=spi_odebrane[15:3];                                //dorobivc debugger na sw aby pokazywal kolejno data_out, spi_odebrane, przyciski, itp
          end
         end
 end
