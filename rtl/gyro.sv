@@ -96,6 +96,8 @@ module gyro #(
    always_comb begin
       state_nxt   = state;
       init_cntr_nxt = init_cntr;
+      data_length = d_length;
+      data_out = d_out;
       
       case(state)
          STARTUP: begin

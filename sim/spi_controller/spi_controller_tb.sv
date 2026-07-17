@@ -12,18 +12,18 @@ module spi_controller_tb;
 
    // Sygnały testowe
    logic clk;
-   logic start;
+   logic [5:0] start;
    logic sclk;
-   logic [15:0] reg_rx;
+   logic [55:0] reg_rx;
    logic poci;
-   logic [15:0] reg_tx;
+   logic [55:0] reg_tx;
    logic copi;
    logic busy;
    logic done;
    logic cs_n;
 
    // Instancjacja badanego modułu (DUT)
-   spi_controller #(.WIDTH(16)) dut (
+   spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut (
       .clk(clk),
       .d_length(start),             // POPRAWIC Z START NA ODP D-LENGTH
       .sclk(sclk),
@@ -57,16 +57,15 @@ module spi_controller_tb;
 
       // Wystawienie sygnału startu na jeden cykl zegara
       @(posedge clk);
-      start = 1;
-      @(posedge clk);
-      start = 0;
-
+      start = 17;
+      
       // Generowanie losowych danych na linii POCI podczas trwania transmisji
       // Symulujemy odpowiedź od urządzenia slave
       fork
          begin
             // Nasłuchiwanie na flagę zakończenia transmisji
             wait(done);
+            start=0;
          end
          begin
             // Podawanie danych na MISO na narastającym zboczu SCLK
@@ -77,6 +76,13 @@ module spi_controller_tb;
             end
          end
       join
+      #25
+      @(posedge clk);
+      start = 56;
+      
+      wait(done);
+      start=0;
+      
 
       // Odczekanie i wyświetlenie wyników
       #20;

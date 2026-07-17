@@ -55,11 +55,12 @@
 
 
 module spi_controller #(
-   parameter logic [5:0] WIDTH=16 //inout registers width
+   parameter int BYTEWIDTH=6,
+   parameter logic [BYTEWIDTH-1:0] WIDTH=56 //inout registers width
    )
    (
     input logic clk, //start,
-    input logic [WIDTH-1:0] d_length,
+    input logic [BYTEWIDTH-1:0] d_length,
     output logic sclk,
     output logic cs_n,
    //controller receive
@@ -77,7 +78,7 @@ module spi_controller #(
 
    logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
    logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
-   logic [4:0] bit_ctr, bit_ctr_nxt; // 5 bitów, żeby policzyć do 16
+   logic [BYTEWIDTH-1:0] bit_ctr, bit_ctr_nxt; // 6 bitów, żeby policzyć do 55 (..64)
 
    //prescaler  100MHz na 1MHz =50 (sclk dziala przez flipflop wiec dodatkowe przez pol)
    localparam CLK_DIVIDER = 50;
