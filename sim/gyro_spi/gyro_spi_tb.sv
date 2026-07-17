@@ -1,6 +1,6 @@
 // ********************************
 //
-//     TESTBENCH for SPI_controller
+//     TESTBENCH for gyro and spi dual work
 //
 //     Krzysztof Piziak
 //
@@ -8,7 +8,7 @@
 
 `timescale 1ns / 1ps
 
-module spi_controller_tb;
+module gyro_spi_tb;
 
    // Sygnały testowe
    logic clk;
@@ -21,12 +21,16 @@ module spi_controller_tb;
    logic busy;
    logic done;
    logic cs_n;
-   logic rst_n;
+
+   logic rst_n_gyro;
+   logic rst_n_spi;
+   logic gyro_data;
+   logic begintick;
 
    // Instancjacja badanego modułu (DUT)
-   spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut (
+   spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut_spi (
       .clk(clk),
-      .rst_n(rst_n),
+      .rst_n(rst_n_spi | done), //!!!! przeniesc czyszczenie rejestrow wewnatrz spi
       .d_length(start),             
       .sclk(sclk),
       .reg_rx(reg_rx),
@@ -38,6 +42,19 @@ module spi_controller_tb;
       .cs_n(cs_n)
    );
 
+   gyro #(.WIDTH(56), .BYTEWIDTH(6)) dut_gyro (
+      .rst_n(rst_n_gyro),
+      .clk(clk),
+      .d_length(start),
+      .d_out(reg_tx),
+      .gyro_data(gyro_data),
+      .ready(done | begintick)
+   );
+
+   always @* begin
+      gyro_data = reg_rx[1];
+   end
+
    // Generacja zegara głównego 100 MHz (okres 10 ns)
    initial begin
       clk = 0;
@@ -47,23 +64,26 @@ module spi_controller_tb;
    // Główny blok stymulacji
    initial begin
       // Stan początkowy
-      start = 0;
-      poci = 0;
-      reg_tx = 16'h6E00; // Wartość do wysłania (binarnie: 01101110)
-      
-      $display("--- Rozpoczecie symulacji SPI ---");
+      rst_n_gyro =1;
+      begintick = 0;
+
+      $display("--- Rozpoczecie symulacji gyro+SPI ---");
       $display("Dane do wyslania (reg_tx): %h", reg_tx);
 
       // Odczekanie kilku cykli zegara (symulacja resetu układu)
       #25; 
       @(posedge clk);
-      rst_n = 0;
+      rst_n_gyro = 0;
+      rst_n_spi = 0;
       @(posedge clk);
-      rst_n = 1;
+      rst_n_gyro = 1;
+      rst_n_spi = 1;
      
       // Wystawienie sygnału startu na jeden cykl zegara
       @(posedge clk);
-      start = 17;
+      begintick = 1;
+      @(posedge clk);
+      begintick = 0;
       
       // Generowanie losowych danych na linii POCI podczas trwania transmisji
       // Symulujemy odpowiedź od urządzenia slave
@@ -71,7 +91,6 @@ module spi_controller_tb;
          begin
             // Nasłuchiwanie na flagę zakończenia transmisji
             wait(done);
-            start=0;
          end
          begin
             // Podawanie danych na MISO na narastającym zboczu SCLK
@@ -82,14 +101,25 @@ module spi_controller_tb;
             end
          end
       join
-      #25
-      @(posedge clk);
-      start = 56;
-      
-      wait(done);
-      start=0;
-      
+      // Faza STARTUP - przechodzimy przez 6 konfiguracji początkowych
+        wait(done); $display("Wyslano init 0 (reg_tx: %h)", reg_tx); #25;
+        wait(done); $display("Wyslano init 1 (reg_tx: %h)", reg_tx); #25;
+        wait(done); $display("Wyslano init 2 (reg_tx: %h)", reg_tx); #25;
+        wait(done); $display("Wyslano init 3 (reg_tx: %h)", reg_tx); #25;
+        wait(done); $display("Wyslano init 4 (reg_tx: %h)", reg_tx); #25;
+        wait(done); $display("Wyslano init 5 (reg_tx: %h)", reg_tx); #25;
 
+      wait(done);
+      #25;
+      for(int i = 0; i<16;i++) begin
+               automatic logic [15:0] data_in = 16'b010;
+               @(posedge sclk);
+               poci = data_in[15-i]; 
+            end
+      wait(done);
+      #25;
+       wait(done);
+      #25;
       // Odczekanie i wyświetlenie wyników
       #20;
       $display("Transmisja zakonczona!");

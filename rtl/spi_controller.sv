@@ -59,7 +59,7 @@ module spi_controller #(
    parameter logic [BYTEWIDTH-1:0] WIDTH=56 //inout registers width
    )
    (
-    input logic clk, //start,
+    input logic clk, rst_n, //start,
     input logic [BYTEWIDTH-1:0] d_length,
     output logic sclk,
     output logic cs_n,
@@ -88,6 +88,18 @@ module spi_controller #(
 
    // seq block
    always_ff @(posedge clk) begin
+      if(!rst_n) begin
+         state    <= IDLE;
+         reg_rx   <= '0;
+         shift_tx <= '0;
+         copi     <= '0;
+         sclk     <= '0;
+         cs_n     <= '1;
+         busy     <= '0;
+         done     <= '0;
+         bit_ctr  <= '0;
+         clk_div  <= '0;
+      end else begin
          state    <= state_nxt;
          reg_rx   <= reg_rx_nxt;
          shift_tx <= shift_tx_nxt;
@@ -98,6 +110,7 @@ module spi_controller #(
          done     <= done_nxt;
          bit_ctr  <= bit_ctr_nxt;
          clk_div  <= clk_div_nxt;
+      end
    end
 
    // fsm block
