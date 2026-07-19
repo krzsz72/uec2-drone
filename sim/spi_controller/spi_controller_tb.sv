@@ -63,7 +63,7 @@ module spi_controller_tb;
      
       // Wystawienie sygnału startu na jeden cykl zegara
       @(posedge clk);
-      start = 17;
+      start = 16;
       
       // Generowanie losowych danych na linii POCI podczas trwania transmisji
       // Symulujemy odpowiedź od urządzenia slave
@@ -78,7 +78,7 @@ module spi_controller_tb;
             for(int i = 0; i<16;i++) begin
                automatic logic [15:0] data_in = 16'h006c;
                @(posedge sclk);
-               poci = data_in[16-i]; 
+               poci = data_in[15-i]; 
             end
          end
       join

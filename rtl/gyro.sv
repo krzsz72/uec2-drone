@@ -127,7 +127,6 @@ module gyro #(
                 'd5: begin
                   data_out={WRITEBIT,7'h16,8'b00000000,40'b0};     // CTRL7_G 16h - 0x00 - 0b00000000
                   data_length='d16;  
-                  state_nxt=GYRO_POLLING;
                end
                default: begin                //when finished
                   state_nxt=GYRO_POLLING;
@@ -137,19 +136,15 @@ module gyro #(
          end
       end
          GYRO_POLLING: begin //polling czy dane sa gotowe
-            if(ready) begin
-               data_out={READBIT,7'h1e,48'b0}; // status_reg 1Eh - 00000-TDA-GDA-XLDA    --- to idzie do spi_odebrane. jezeli bit[1] bedzie 1 to dane sa gotowe
-               data_length='d16;  
-            end
-            if(gyro_data) state_nxt = READ;
+            data_out={READBIT,7'h1e,48'b0}; // status_reg 1Eh - 00000-TDA-GDA-XLDA    --- to idzie do spi_odebrane. jezeli bit[1] bedzie 1 to dane sa gotowe
+            data_length='d16;  
+            if(gyro_data && ready) state_nxt = READ;
          end
          
          READ: begin //wysyla ramke o dlugosci 3 bajtow by sczytac xyz rejestry.  PAMIETAJ O ZEROWANIU spi_odebrane PO KAZDYM ODCZYCIE
-            if(ready) begin
-               data_out={READBIT,7'h22,48'b0}; // OUTX_L_G 22h - OUTX_L_G register D7 D6 D5 D4 D3 D2 D1 D0 \ D15 D14 D13 D12 D11 D10 D9 D8
-               data_length='d56; //1bajt na adres + 6 bajtow na XL XH; YL YH; ZL ZH  
-            end
-            state_nxt = GYRO_POLLING;
+            data_out={READBIT,7'h22,48'b0}; // OUTX_L_G 22h - OUTX_L_G register D7 D6 D5 D4 D3 D2 D1 D0 \ D15 D14 D13 D12 D11 D10 D9 D8
+            data_length='d56; //1bajt na adres + 6 bajtow na XL XH; YL YH; ZL ZH  
+            if(ready) state_nxt = GYRO_POLLING;
          end
          default: state_nxt = STARTUP;
       endcase

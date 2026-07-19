@@ -116,6 +116,16 @@ module gyro_spi_tb;
                @(posedge sclk);
                poci = data_in[15-i]; 
             end
+      wait(cs_n);
+      #60;
+      if(reg_tx=={1'b1,7'h22,48'b0})begin
+         for(int i = 0; i<56;i++) begin
+               automatic logic [55:0] data_in = {8'h0,16'h2137,16'h2137,16'h2137};
+               @(posedge sclk);
+               poci = data_in[55-i]; 
+            end
+         end
+      #1010ns assign poci = 1'b0;
       wait(done);
       #25;
        wait(done);

@@ -166,6 +166,7 @@ module spi_controller #(
             sclk_nxt = 1'b0;
             cs_n_nxt = 1'b1;
             busy_nxt = 1'b0;
+            reg_rx_nxt = '0;
             
             if (d_length) begin
                busy_nxt     = 1'b1;
@@ -183,7 +184,7 @@ module spi_controller #(
                sclk_nxt = ~sclk;
                
                if (~sclk == 1'b1) begin
-                  // ROSNĄCE ZBOCZE: gyro read
+                  // ROSNĄCE ZBOCZE: gyro read  
                   reg_rx_nxt = {reg_rx[WIDTH-2:0], poci};
                end else begin
                   // OPADAJĄCE ZBOCZE: gyro send
