@@ -30,7 +30,7 @@ module gyro_spi_tb;
    // Instancjacja badanego modułu (DUT)
    spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut_spi (
       .clk(clk),
-      .rst_n(rst_n_spi | done), //!!!! przeniesc czyszczenie rejestrow wewnatrz spi
+      .rst_n(rst_n_spi), //!!!! przeniesc czyszczenie rejestrow wewnatrz spi
       .d_length(start),             
       .sclk(sclk),
       .reg_rx(reg_rx),

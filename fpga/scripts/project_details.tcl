@@ -33,6 +33,7 @@ set xdc_files {
 set sv_files {
     ../rtl/spi_controller.sv
     ../rtl/gyro.sv
+    ../rtl/unit_converter.sv
     ../rtl/top_drone.sv
     rtl/top_drone_basys3.sv
 }

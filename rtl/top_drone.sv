@@ -64,9 +64,9 @@ module top_drone#(
      logic [55:0] odczytwartosc;// = {1'b1,destination,16'b0};
      wire spi_done;
     // wire spi_loopback;
-     logic [47:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b
-    logic [55:0] data_length;
-    
+     logic [55:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b
+    logic [5:0] data_length;
+    logic [15:0] converted_Y;
     gyro #(
         .WIDTH(56)
     ) gyro (
@@ -74,8 +74,8 @@ module top_drone#(
         .rst_n(~btnReset),
         .d_length(data_length),
         .d_out(odczytwartosc),
-        .ready(spi_start),
-        .gyro_data(spi_odebrane[17])
+        .ready(spi_done | spi_start),
+        .gyro_data(spi_odebrane[1])
     );
 
      spi_controller #(
@@ -83,6 +83,7 @@ module top_drone#(
       )
       spi_controller(
          .clk(clk),
+         .rst_n(~btnReset),
          .d_length(data_length),
          .sclk(sclk),
          .cs_n(cs_n),
@@ -92,6 +93,17 @@ module top_drone#(
          .copi(copi),
          .busy(),
          .done(spi_done)
+      );
+
+      unit_converter #(
+        .WIDTH(16)
+        )
+         converter_Y (
+          .clk(clk),
+          .rst_n(~btnReset),
+          .angle_deg(),
+          .angle_raw(converted_Y),
+          .gyro_raw_data(spi_odebrane[31:16])
       );
 
 always_ff @(posedge clk) begin
@@ -104,7 +116,8 @@ always_ff @(posedge clk) begin
          if (spi_done == 1'b1) begin
         // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
             led[0] <= (spi_odebrane[15:8] == 8'h6c);                      // zapala kolejne ledy co 1 wypelniajac caly bufor. na oscylo nie widac cs_n..?
-            led[15:3]<=spi_odebrane[15:3];                                //dorobivc debugger na sw aby pokazywal kolejno data_out, spi_odebrane, przyciski, itp
+            led[15:8]<=converted_Y[15:8];                                // wyswietlmy przyspieszenie w kacie Y: 
+                                                                            //dorobivc debugger na sw aby pokazywal kolejno data_out, spi_odebrane, przyciski, itp
          end
         end
 end
