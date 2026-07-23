@@ -66,7 +66,7 @@ module gyro_spi_tb;
       // Stan początkowy
       rst_n_gyro =1;
       begintick = 0;
-
+      poci =0;
       $display("--- Rozpoczecie symulacji gyro+SPI ---");
       $display("Dane do wyslania (reg_tx): %h", reg_tx);
 
@@ -97,7 +97,7 @@ module gyro_spi_tb;
             for(int i = 0; i<16;i++) begin
                automatic logic [15:0] data_in = 16'h006c;
                @(posedge sclk);
-               poci = data_in[16-i]; 
+               poci = data_in[15-i]; 
             end
          end
       join

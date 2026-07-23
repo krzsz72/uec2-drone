@@ -84,7 +84,7 @@ module unit_converter #(
 
    // fsm block
    always_comb begin
-      angle_raw_nxt = gyro_raw_data;
+      if(angle_raw_nxt != '0) angle_raw_nxt = gyro_raw_data;
    end
 
 endmodule

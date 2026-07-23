@@ -124,7 +124,7 @@ module spi_controller #(
          IDLE: begin
             bit_ctr_nxt = '0;
             clk_div_nxt = '0;
-            if (d_length) state_nxt = BUSY;
+            if (d_length && !bit_ctr) state_nxt = BUSY;
          end
          
          BUSY: begin
@@ -172,17 +172,18 @@ module spi_controller #(
                busy_nxt     = 1'b1;
                cs_n_nxt     = 1'b0;          
                shift_tx_nxt = reg_tx;
-               copi_nxt     = reg_tx[WIDTH-1];
+               copi_nxt     = reg_tx[WIDTH-1];  //shift_tx_nxt jest wczesny o 1 takt
             end
          end
          
          BUSY: begin
             busy_nxt = 1'b1;
             cs_n_nxt = 1'b0;
+            done_nxt = 1'b0;
             
             if (spi_tick) begin
                sclk_nxt = ~sclk;
-               
+            
                if (~sclk == 1'b1) begin
                   // ROSNĄCE ZBOCZE: gyro read  
                   reg_rx_nxt = {reg_rx[WIDTH-2:0], poci};
@@ -190,7 +191,13 @@ module spi_controller #(
                   // OPADAJĄCE ZBOCZE: gyro send
                   shift_tx_nxt = {shift_tx[WIDTH-2:0], 1'b0};
                   copi_nxt = shift_tx_nxt[WIDTH-1]; 
+                  if(bit_ctr==d_length)begin
+                     cs_n_nxt = 1'b1;
+                     busy_nxt = 1'b0;
+                     done_nxt = 1'b1;
+                  end
                end
+
             end
          end
          
@@ -198,7 +205,7 @@ module spi_controller #(
             sclk_nxt = 1'b0;
             cs_n_nxt = 1'b1;
             busy_nxt = 1'b0;
-            done_nxt = 1'b1;
+            done_nxt = 1'b0;
          end
       endcase
    end
