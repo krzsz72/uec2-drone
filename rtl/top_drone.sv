@@ -63,10 +63,12 @@ module top_drone#(
      logic [6:0] destination = 7'h0F;
      logic [7:0] data_write;
      logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
+      (*KEEP = "true"*)
      logic [55:0] odczytwartosc;// = {1'b1,destination,16'b0};
      wire spi_done;
     // wire spi_loopback;
-     logic [55:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b +8bit padding z komendy kontrolera
+     (*KEEP = "true"*)
+    logic [55:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b +8bit padding z komendy kontrolera
     logic [5:0] data_length;
     logic [15:0] converted_Y;
     gyro #(
@@ -166,9 +168,9 @@ always_ff @(posedge clk) begin
 
             3'b010: begin // sw[14]=0, sw[13]=1, sw[12]=0 -> SPI_ODEBRANE (56 bit)
                 case (page_cnt)
-                    2'd0: begin led <= spi_odebrane[15:0];           disp_hex <= spi_odebrane[15:0];           end
-                    2'd1: begin led <= spi_odebrane[31:16];          disp_hex <= spi_odebrane[31:16];          end
-                    2'd2: begin led <= spi_odebrane[47:32];          disp_hex <= spi_odebrane[47:32];          end
+                    2'd0: begin led <= spi_odebrane[15:0];           disp_hex <= spi_odebrane[15:0];           end //gyro Z
+                    2'd1: begin led <= spi_odebrane[31:16];          disp_hex <= spi_odebrane[31:16];          end //gyro Y
+                    2'd2: begin led <= spi_odebrane[47:32];          disp_hex <= spi_odebrane[47:32];          end //gyro X
                     2'd3: begin led <= {8'b0, spi_odebrane[55:48]};  disp_hex <= {8'b0, spi_odebrane[55:48]};  end
                 endcase
             end
