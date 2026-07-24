@@ -15,6 +15,7 @@
 module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
+    input  wire btnR,
     input wire [15:0] sw,
     input wire btnU,
     output wire JB10,
@@ -133,6 +134,13 @@ module top_drone_basys3 (
          .db_tick(btnU_tick)
       );
 
+      debounce btnR_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnR),
+         .db_level(),
+         .db_tick(btnR_pulse)
+      );
       wire copi;
       wire sclk;
       wire poci;
@@ -165,6 +173,7 @@ module top_drone_basys3 (
         .sseg,
         .led(led[15:0]),
         .button(btnU),
+        .btnR_pulse(btnR_pulse),
         .btnReset(btnC),
         .sw(sw)
         );

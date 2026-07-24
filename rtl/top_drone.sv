@@ -31,6 +31,7 @@ module top_drone#(
         output logic [7:0] sseg,
         output logic [15:0] led,
         input logic button,
+        input logic btnR_pulse,
         input logic btnReset,
         input logic [15:0] sw
     );
@@ -107,35 +108,100 @@ module top_drone#(
           .gyro_raw_data(spi_odebrane[31:16])
       );
 
+// --- DEKLARACJE POMOCNICZE ---
 logic [15:0] disp_hex;
+logic [1:0] page_cnt;       // Do przewijania 56-bitowych zmiennych
+logic       flag_6c_detect; // Zatrzask dla flagi odebrania '6c'
 
+// Zmienna dla wygody - grupuje 3 przełączniki w jeden 3-bitowy wektor (zakres 0-7)
+logic [2:0] debug_menu_sel;
+assign debug_menu_sel = sw[14:12]; 
+
+// *******D E B U G**************D E B U G**************D E B U G*******
+// sw15 - tryb ciagly gyro, sw14,sw13,sw12:
+// 001 : odczytwartosc - nadawanawartosc
+// 010 : spi_odebrane - odebrane dane
+// 011 : convertedY - 
+// 100 : status: convertedY_H , 00000, led2 - spi_odebrane[1], led1 - ?convertedY led0 - ?6c
+// 101 : 
+// 110 : 
+// 111 : 
+// *******D E B U G**************D E B U G**************D E B U G*******
+
+
+// --- GŁÓWNY BLOK DEBUGGERA ---
 always_ff @(posedge clk) begin
-    //reset
-       if (btnReset)begin
-        led[15:0]<=16'b0;
+    if (btnReset) begin
+        led <= 16'b0;
         disp_hex <= '0;
-    end else begin
-        if(sw[14])begin
-             disp_hex <= odczytwartosc[55:40]; //sw15 - tryb ciagly, sw14 - nadawana komenda, sw13 - odebrane dane, sw12 - gyroY
-            led[15:0] <= odczytwartosc[55:40];
+        page_cnt <= 2'b0;
+        flag_6c_detect <= 1'b0;
+    end 
+    else begin
+        // 1. PRZEWIJANIE STRON (Użyj swojej flagi zbocza zamiast btnR_pulse!)
+        if (btnR_pulse) begin 
+            page_cnt <= page_cnt + 2'd1;
         end
-        if(sw[13]) begin
-             disp_hex <= spi_odebrane[15:0];
-            led[15:0] <= spi_odebrane[15:0];
+
+        // 2. ZATRZASKIWANIE ZDARZEŃ (Zachowane z poprzedniej wersji)
+        if (spi_done == 1'b1 && spi_odebrane[15:8] == 8'h6c) begin
+            flag_6c_detect <= 1'b1; 
         end
-        if(sw[12])begin
-             disp_hex <= converted_Y;
-            led[15:0] <= converted_Y;           //sw11 - toggle debug leds full / partial
-        end
-        if(~sw[11])begin
-                if(converted_Y) led[1] <= 1'b1;           //  
-                if(spi_odebrane[1]) led[2] <= 1'b1;
-                    if (spi_done == 1'b1) begin        // Dla spi_done: zapamiętaj ostatni wynik porównania z 8'h6c
-                    if( (spi_odebrane[15:8] == 8'h6c)) led[0] <=1'b1;                      // zapala kolejne ledy co 1 wypelniajac caly bufor. na oscylo nie widac cs_n..?
-                    led[15:8]<=converted_Y[15:8];                                // wyswietlmy przyspieszenie w kacie Y: 
-                    end                                                                //dorobivc debugger na sw aby pokazywal kolejno data_out, spi_odebrane, przyciski, itp
-        end
-        end
+
+        // 3. MULTIPLEKSER MENU (Kodowanie binarne sw[14:12])
+        case (debug_menu_sel)
+            3'b000: begin // Zwykły tryb (wszystkie 3 switche w dół)
+                led <= 16'b0;
+                disp_hex <= '0;
+            end
+            
+            3'b001: begin // sw[14]=0, sw[13]=0, sw[12]=1 -> ODCZYTWARTOSC (56 bit)
+                case (page_cnt)
+                    2'd0: begin led <= odczytwartosc[15:0];          disp_hex <= odczytwartosc[15:0];          end
+                    2'd1: begin led <= odczytwartosc[31:16];         disp_hex <= odczytwartosc[31:16];         end
+                    2'd2: begin led <= odczytwartosc[47:32];         disp_hex <= odczytwartosc[47:32];         end
+                    2'd3: begin led <= {8'b0, odczytwartosc[55:48]}; disp_hex <= {8'b0, odczytwartosc[55:48]}; end
+                endcase
+            end
+
+            3'b010: begin // sw[14]=0, sw[13]=1, sw[12]=0 -> SPI_ODEBRANE (56 bit)
+                case (page_cnt)
+                    2'd0: begin led <= spi_odebrane[15:0];           disp_hex <= spi_odebrane[15:0];           end
+                    2'd1: begin led <= spi_odebrane[31:16];          disp_hex <= spi_odebrane[31:16];          end
+                    2'd2: begin led <= spi_odebrane[47:32];          disp_hex <= spi_odebrane[47:32];          end
+                    2'd3: begin led <= {8'b0, spi_odebrane[55:48]};  disp_hex <= {8'b0, spi_odebrane[55:48]};  end
+                endcase
+            end
+
+            3'b011: begin // sw[14]=0, sw[13]=1, sw[12]=1 -> CONVERTED_Y
+                led <= converted_Y;
+                disp_hex <= converted_Y;
+            end
+
+            3'b100: begin // sw[14]=1, sw[13]=0, sw[12]=0 -> FLAGI STATUSU
+                led      <= {converted_Y[15:8], 5'b00000, spi_odebrane[1], (|converted_Y), flag_6c_detect};
+                disp_hex <= {converted_Y[15:8], 5'b00000, spi_odebrane[1], (|converted_Y), flag_6c_detect};
+            end
+            
+            3'b101: begin // sw[14]=1, sw[13]=0, sw[12]=1 -> MIEJSCE NA NOWĄ ZMIENNĄ
+                // led <= jakas_inna_zmienna;
+                // disp_hex <= jakas_inna_zmienna;
+            end
+
+            3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> MIEJSCE NA NOWĄ ZMIENNĄ
+                // led <= ...
+            end
+
+            3'b111: begin // sw[14]=1, sw[13]=1, sw[12]=1 -> MIEJSCE NA NOWĄ ZMIENNĄ
+                // led <= ...
+            end
+
+            default: begin
+                led <= 16'b0;
+                disp_hex <= '0;
+            end
+        endcase
+    end
 end
     
       disp_hex_mux u_display (
