@@ -61,7 +61,8 @@ module gyro #(
    (
     input logic clk, ready, rst_n, gyro_data, //start de facto ready - done od spi   gyro_data sprawdzana gotowosc danych na zewn i tutaj tylko flaga wysylana zeby nastepna ramke wyslalo
     output logic [WIDTH-1:0] d_out,
-    output logic [BYTEWIDTH-1:0] d_length
+    output logic [BYTEWIDTH-1:0] d_length,
+    output logic [1:0] state_curr, state_prev
    );
 
    const bit WRITEBIT = 1'b0;
@@ -82,12 +83,17 @@ module gyro #(
          init_cntr <= '0;
          d_length <='0;
          d_out    <={READBIT,55'b0};
+         state_prev <= '0;
+         state_curr <= '0;
+
 
       end else begin
          state    <= state_nxt;
          init_cntr <= init_cntr_nxt;
          d_length <= data_length;
          d_out    <= data_out;
+         state_prev <= state_curr;
+         state_curr <= state;
 
       end
    end

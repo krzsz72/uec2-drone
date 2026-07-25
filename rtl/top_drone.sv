@@ -70,7 +70,11 @@ module top_drone#(
      (*KEEP = "true"*)
     logic [55:0] spi_odebrane; //max potrzebuje zmiescic 6x8bit = 48b +8bit padding z komendy kontrolera
     logic [5:0] data_length;
-    logic [15:0] converted_Y;
+    logic signed [15:0] converted_Y;
+    logic signed [15:0] angel; //👼
+    logic [1:0] gyro_state;
+    logic gyro_read_done;
+    assign gyro_read_done = ((gyro_state==2'b10) & spi_done); //nie pojawia sie w trbie ciaglym
     gyro #(
         .WIDTH(56)
     ) gyro (
@@ -79,7 +83,8 @@ module top_drone#(
         .d_length(data_length),
         .d_out(odczytwartosc),
         .ready( (spi_done && sw[15]) | spi_start),
-        .gyro_data(spi_odebrane[1])
+        .gyro_data(spi_odebrane[1]),
+        .state_curr(gyro_state)
     );
 
      spi_controller #(
@@ -105,8 +110,10 @@ module top_drone#(
          converter_Y (
           .clk(clk),
           .rst_n(~btnReset),
-          .angle_deg(),
-          .angle_raw(converted_Y),
+          .data_latch(gyro_read_done),
+          .angle_deg(angel),
+          .angle_raw(),
+          .latched_raw(convertedY),
           .gyro_raw_data(spi_odebrane[31:16])
       );
 
@@ -125,7 +132,7 @@ assign debug_menu_sel = sw[14:12];
 // 010 : spi_odebrane - odebrane dane
 // 011 : convertedY - 
 // 100 : status: convertedY_H , 00000, led2 - spi_odebrane[1], led1 - ?convertedY led0 - ?6c
-// 101 : 
+// 101 : angel - converted Y angle
 // 110 : 
 // 111 : 
 // *******D E B U G**************D E B U G**************D E B U G*******
@@ -185,9 +192,8 @@ always_ff @(posedge clk) begin
                 disp_hex <= {converted_Y[15:8], 5'b00000, spi_odebrane[1], (|converted_Y), flag_6c_detect};
             end
             
-            3'b101: begin // sw[14]=1, sw[13]=0, sw[12]=1 -> MIEJSCE NA NOWĄ ZMIENNĄ
-                // led <= jakas_inna_zmienna;
-                // disp_hex <= jakas_inna_zmienna;
+            3'b101: begin // sw[14]=1, sw[13]=0, sw[12]=1 -> kat Y
+                led <= angel;                                        disp_hex <= angel;
             end
 
             3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> MIEJSCE NA NOWĄ ZMIENNĄ

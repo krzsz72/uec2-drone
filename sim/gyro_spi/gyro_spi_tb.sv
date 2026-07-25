@@ -26,6 +26,8 @@ module gyro_spi_tb;
    logic rst_n_spi;
    logic gyro_data;
    logic begintick;
+   logic [1:0] prev_state;
+   logic [1:0] cur_state;
 
    // Instancjacja badanego modułu (DUT)
    spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut_spi (
@@ -48,7 +50,9 @@ module gyro_spi_tb;
       .d_length(start),
       .d_out(reg_tx),
       .gyro_data(gyro_data),
-      .ready(done | begintick)
+      .ready(done | begintick),
+      .state_curr(cur_state),
+      .state_prev(prev_state)
    );
 
    always @* begin
