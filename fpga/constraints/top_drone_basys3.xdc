@@ -301,6 +301,7 @@ set_property CONFIG_VOLTAGE 3.3 [current_design]
 set_property CFGBVS VCCO [current_design]
 
 
+
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
 set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
@@ -317,20 +318,36 @@ set_property port_width 2 [get_debug_ports u_ila_0/probe0]
 connect_debug_port u_ila_0/probe0 [get_nets [list {u_top_drone/gyro/gyro_state[0]} {u_top_drone/gyro/gyro_state[1]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
-set_property port_width 16 [get_debug_ports u_ila_0/probe1]
-connect_debug_port u_ila_0/probe1 [get_nets [list {led_OBUF[0]} {led_OBUF[1]} {led_OBUF[2]} {led_OBUF[3]} {led_OBUF[4]} {led_OBUF[5]} {led_OBUF[6]} {led_OBUF[7]} {led_OBUF[8]} {led_OBUF[9]} {led_OBUF[10]} {led_OBUF[11]} {led_OBUF[12]} {led_OBUF[13]} {led_OBUF[14]} {led_OBUF[15]}]]
+set_property port_width 2 [get_debug_ports u_ila_0/probe1]
+connect_debug_port u_ila_0/probe1 [get_nets [list {page_cnt[0]} {page_cnt[1]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
-set_property port_width 2 [get_debug_ports u_ila_0/probe2]
-connect_debug_port u_ila_0/probe2 [get_nets [list {page_cnt[0]} {page_cnt[1]}]]
+set_property port_width 56 [get_debug_ports u_ila_0/probe2]
+connect_debug_port u_ila_0/probe2 [get_nets [list {u_top_drone/spi_controller/out[0]} {u_top_drone/spi_controller/out[1]} {u_top_drone/spi_controller/out[2]} {u_top_drone/spi_controller/out[3]} {u_top_drone/spi_controller/out[4]} {u_top_drone/spi_controller/out[5]} {u_top_drone/spi_controller/out[6]} {u_top_drone/spi_controller/out[7]} {u_top_drone/spi_controller/out[8]} {u_top_drone/spi_controller/out[9]} {u_top_drone/spi_controller/out[10]} {u_top_drone/spi_controller/out[11]} {u_top_drone/spi_controller/out[12]} {u_top_drone/spi_controller/out[13]} {u_top_drone/spi_controller/out[14]} {u_top_drone/spi_controller/out[15]} {u_top_drone/spi_controller/out[16]} {u_top_drone/spi_controller/out[17]} {u_top_drone/spi_controller/out[18]} {u_top_drone/spi_controller/out[19]} {u_top_drone/spi_controller/out[20]} {u_top_drone/spi_controller/out[21]} {u_top_drone/spi_controller/out[22]} {u_top_drone/spi_controller/out[23]} {u_top_drone/spi_controller/out[24]} {u_top_drone/spi_controller/out[25]} {u_top_drone/spi_controller/out[26]} {u_top_drone/spi_controller/out[27]} {u_top_drone/spi_controller/out[28]} {u_top_drone/spi_controller/out[29]} {u_top_drone/spi_controller/out[30]} {u_top_drone/spi_controller/out[31]} {u_top_drone/spi_controller/out[32]} {u_top_drone/spi_controller/out[33]} {u_top_drone/spi_controller/out[34]} {u_top_drone/spi_controller/out[35]} {u_top_drone/spi_controller/out[36]} {u_top_drone/spi_controller/out[37]} {u_top_drone/spi_controller/out[38]} {u_top_drone/spi_controller/out[39]} {u_top_drone/spi_controller/out[40]} {u_top_drone/spi_controller/out[41]} {u_top_drone/spi_controller/out[42]} {u_top_drone/spi_controller/out[43]} {u_top_drone/spi_controller/out[44]} {u_top_drone/spi_controller/out[45]} {u_top_drone/spi_controller/out[46]} {u_top_drone/spi_controller/out[47]} {u_top_drone/spi_controller/out[48]} {u_top_drone/spi_controller/out[49]} {u_top_drone/spi_controller/out[50]} {u_top_drone/spi_controller/out[51]} {u_top_drone/spi_controller/out[52]} {u_top_drone/spi_controller/out[53]} {u_top_drone/spi_controller/out[54]} {u_top_drone/spi_controller/out[55]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
-set_property port_width 1 [get_debug_ports u_ila_0/probe3]
-connect_debug_port u_ila_0/probe3 [get_nets [list spi_done]]
+set_property port_width 16 [get_debug_ports u_ila_0/probe3]
+connect_debug_port u_ila_0/probe3 [get_nets [list {led_OBUF[0]} {led_OBUF[1]} {led_OBUF[2]} {led_OBUF[3]} {led_OBUF[4]} {led_OBUF[5]} {led_OBUF[6]} {led_OBUF[7]} {led_OBUF[8]} {led_OBUF[9]} {led_OBUF[10]} {led_OBUF[11]} {led_OBUF[12]} {led_OBUF[13]} {led_OBUF[14]} {led_OBUF[15]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe4]
-set_property port_width 1 [get_debug_ports u_ila_0/probe4]
-connect_debug_port u_ila_0/probe4 [get_nets [list u_top_drone/gyro_read_done]]
+set_property port_width 4 [get_debug_ports u_ila_0/probe4]
+connect_debug_port u_ila_0/probe4 [get_nets [list {JC_OBUF[1]} {JC_OBUF[2]} {JC_OBUF[3]} {JC_OBUF[5]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe5]
+set_property port_width 56 [get_debug_ports u_ila_0/probe5]
+connect_debug_port u_ila_0/probe5 [get_nets [list {u_top_drone/odczytwartosc[0]} {u_top_drone/odczytwartosc[1]} {u_top_drone/odczytwartosc[2]} {u_top_drone/odczytwartosc[3]} {u_top_drone/odczytwartosc[4]} {u_top_drone/odczytwartosc[5]} {u_top_drone/odczytwartosc[6]} {u_top_drone/odczytwartosc[7]} {u_top_drone/odczytwartosc[8]} {u_top_drone/odczytwartosc[9]} {u_top_drone/odczytwartosc[10]} {u_top_drone/odczytwartosc[11]} {u_top_drone/odczytwartosc[12]} {u_top_drone/odczytwartosc[13]} {u_top_drone/odczytwartosc[14]} {u_top_drone/odczytwartosc[15]} {u_top_drone/odczytwartosc[16]} {u_top_drone/odczytwartosc[17]} {u_top_drone/odczytwartosc[18]} {u_top_drone/odczytwartosc[19]} {u_top_drone/odczytwartosc[20]} {u_top_drone/odczytwartosc[21]} {u_top_drone/odczytwartosc[22]} {u_top_drone/odczytwartosc[23]} {u_top_drone/odczytwartosc[24]} {u_top_drone/odczytwartosc[25]} {u_top_drone/odczytwartosc[26]} {u_top_drone/odczytwartosc[27]} {u_top_drone/odczytwartosc[28]} {u_top_drone/odczytwartosc[29]} {u_top_drone/odczytwartosc[30]} {u_top_drone/odczytwartosc[31]} {u_top_drone/odczytwartosc[32]} {u_top_drone/odczytwartosc[33]} {u_top_drone/odczytwartosc[34]} {u_top_drone/odczytwartosc[35]} {u_top_drone/odczytwartosc[36]} {u_top_drone/odczytwartosc[37]} {u_top_drone/odczytwartosc[38]} {u_top_drone/odczytwartosc[39]} {u_top_drone/odczytwartosc[40]} {u_top_drone/odczytwartosc[41]} {u_top_drone/odczytwartosc[42]} {u_top_drone/odczytwartosc[43]} {u_top_drone/odczytwartosc[44]} {u_top_drone/odczytwartosc[45]} {u_top_drone/odczytwartosc[46]} {u_top_drone/odczytwartosc[47]} {u_top_drone/odczytwartosc[48]} {u_top_drone/odczytwartosc[49]} {u_top_drone/odczytwartosc[50]} {u_top_drone/odczytwartosc[51]} {u_top_drone/odczytwartosc[52]} {u_top_drone/odczytwartosc[53]} {u_top_drone/odczytwartosc[54]} {u_top_drone/odczytwartosc[55]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe6]
+set_property port_width 56 [get_debug_ports u_ila_0/probe6]
+connect_debug_port u_ila_0/probe6 [get_nets [list {u_top_drone/spi_odebrane[0]} {u_top_drone/spi_odebrane[1]} {u_top_drone/spi_odebrane[2]} {u_top_drone/spi_odebrane[3]} {u_top_drone/spi_odebrane[4]} {u_top_drone/spi_odebrane[5]} {u_top_drone/spi_odebrane[6]} {u_top_drone/spi_odebrane[7]} {u_top_drone/spi_odebrane[8]} {u_top_drone/spi_odebrane[9]} {u_top_drone/spi_odebrane[10]} {u_top_drone/spi_odebrane[11]} {u_top_drone/spi_odebrane[12]} {u_top_drone/spi_odebrane[13]} {u_top_drone/spi_odebrane[14]} {u_top_drone/spi_odebrane[15]} {u_top_drone/spi_odebrane[16]} {u_top_drone/spi_odebrane[17]} {u_top_drone/spi_odebrane[18]} {u_top_drone/spi_odebrane[19]} {u_top_drone/spi_odebrane[20]} {u_top_drone/spi_odebrane[21]} {u_top_drone/spi_odebrane[22]} {u_top_drone/spi_odebrane[23]} {u_top_drone/spi_odebrane[24]} {u_top_drone/spi_odebrane[25]} {u_top_drone/spi_odebrane[26]} {u_top_drone/spi_odebrane[27]} {u_top_drone/spi_odebrane[28]} {u_top_drone/spi_odebrane[29]} {u_top_drone/spi_odebrane[30]} {u_top_drone/spi_odebrane[31]} {u_top_drone/spi_odebrane[32]} {u_top_drone/spi_odebrane[33]} {u_top_drone/spi_odebrane[34]} {u_top_drone/spi_odebrane[35]} {u_top_drone/spi_odebrane[36]} {u_top_drone/spi_odebrane[37]} {u_top_drone/spi_odebrane[38]} {u_top_drone/spi_odebrane[39]} {u_top_drone/spi_odebrane[40]} {u_top_drone/spi_odebrane[41]} {u_top_drone/spi_odebrane[42]} {u_top_drone/spi_odebrane[43]} {u_top_drone/spi_odebrane[44]} {u_top_drone/spi_odebrane[45]} {u_top_drone/spi_odebrane[46]} {u_top_drone/spi_odebrane[47]} {u_top_drone/spi_odebrane[48]} {u_top_drone/spi_odebrane[49]} {u_top_drone/spi_odebrane[50]} {u_top_drone/spi_odebrane[51]} {u_top_drone/spi_odebrane[52]} {u_top_drone/spi_odebrane[53]} {u_top_drone/spi_odebrane[54]} {u_top_drone/spi_odebrane[55]}]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe7]
+set_property port_width 1 [get_debug_ports u_ila_0/probe7]
+connect_debug_port u_ila_0/probe7 [get_nets [list u_top_drone/gyro_read_done]]
+create_debug_port u_ila_0 probe
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe8]
+set_property port_width 1 [get_debug_ports u_ila_0/probe8]
+connect_debug_port u_ila_0/probe8 [get_nets [list spi_done]]
 set_property C_CLK_INPUT_FREQ_HZ 300000000 [get_debug_cores dbg_hub]
 set_property C_ENABLE_CLK_DIVIDER false [get_debug_cores dbg_hub]
 set_property C_USER_SCAN_CHAIN 1 [get_debug_cores dbg_hub]
