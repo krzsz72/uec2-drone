@@ -73,8 +73,8 @@ module convert_accel #(
    logic signed [WIDTH-1:0] angle_deg_nxt;
    logic signed [WIDTH-1:0] latched_raw_nxt;
    
-   // stała do przemnożenia XL - RAW * (180/pi) * 4098 * 2^24 = 234568
-   localparam logic signed [31:0] XL_COEFF = 32'sd234568;
+   // stała do przemnożenia XL - RAW * (180/(pi * 4098)) * 2^24 = 234569
+   localparam logic signed [31:0] XL_COEFF = 32'sd234569;
 
    // seq block
    always_ff @(posedge clk) begin
@@ -101,7 +101,7 @@ module convert_accel #(
       if(!data_latch)begin
          angle_raw_nxt = {accel_raw_data[7:0],accel_raw_data[15:8]};
       end else begin
-         mul_result_nxt = angle_raw_nxt * XL_COEFF;
+         mul_result_nxt = angle_raw * XL_COEFF;
          angle_deg_nxt = mul_result_nxt[39:24] ;
          latched_raw_nxt = angle_raw ;
       end
