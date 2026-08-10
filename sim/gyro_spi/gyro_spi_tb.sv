@@ -12,11 +12,11 @@ module gyro_spi_tb;
 
    // Sygnały testowe
    logic clk;
-   logic [5:0] start;
+   logic [6:0] start;
    logic sclk;
-   logic [55:0] reg_rx;
+   logic [103:0] reg_rx;
    logic poci;
-   logic [55:0] reg_tx;
+   logic [103:0] reg_tx;
    logic copi;
    logic busy;
    logic done;
@@ -30,7 +30,7 @@ module gyro_spi_tb;
    logic [1:0] cur_state;
 
    // Instancjacja badanego modułu (DUT)
-   spi_controller #(.WIDTH(56), .BYTEWIDTH(6)) dut_spi (
+   spi_controller #(.WIDTH(104), .BYTEWIDTH(7)) dut_spi (
       .clk(clk),
       .rst_n(rst_n_spi), //!!!! przeniesc czyszczenie rejestrow wewnatrz spi
       .d_length(start),             
@@ -44,7 +44,7 @@ module gyro_spi_tb;
       .cs_n(cs_n)
    );
 
-   gyro #(.WIDTH(56), .BYTEWIDTH(6)) dut_gyro (
+   gyro #(.WIDTH(104), .BYTEWIDTH(7)) dut_gyro (
       .rst_n(rst_n_gyro),
       .clk(clk),
       .d_length(start),
@@ -122,11 +122,11 @@ module gyro_spi_tb;
             end
       wait(cs_n);
       #60;
-      if(reg_tx=={1'b1,7'h22,48'b0})begin
-         for(int i = 0; i<56;i++) begin
-               automatic logic [55:0] data_in = {8'h0,16'h1234,16'h5678,16'h9abc};
+      if(reg_tx=={1'b1,7'h22,96'b0})begin
+         for(int i = 0; i<104;i++) begin
+               automatic logic [103:0] data_in = {8'h0,16'h1234,16'h5678,16'h9abc,16'hdef0,16'h1234,16'h5678};
                @(posedge sclk);
-               poci = data_in[55-i]; 
+               poci = data_in[103-i]; 
             end
          end
       #1010ns assign poci = 1'b0;
