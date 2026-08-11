@@ -70,6 +70,8 @@ module top_drone#(
      (*KEEP = "true"*)
     logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
     logic [6:0] data_length;
+    logic signed [15:0] roll_raw;
+    logic signed [15:0] roll_deg;
     logic signed [15:0] converted_Y;
     logic signed [15:0] angel; //👼
     logic [1:0] gyro_state;
@@ -107,12 +109,25 @@ module top_drone#(
          converter_Y (
           .clk(clk),
           .rst_n(~btnReset),
+          .gyro_raw_data(spi_odebrane[79:65]),
           .data_latch(gyro_read_done),
           .angle_deg(angel),
           .angle_raw(),
-          .latched_raw(converted_Y),
-          .gyro_raw_data(spi_odebrane[79:65])
+          .latched_raw(converted_Y)
       );
+
+      convert_accel #(.WIDTH(16) )
+       accel_roll (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_raw_data(spi_odebrane[31:16]),
+        .data_latch(gyro_read_done),
+        .angle_deg(roll_deg),
+        .angle_raw(),
+        .latched_raw(roll_raw),
+        .mul_result()
+      );
+
 
 // --- DEKLARACJE POMOCNICZE ---
 logic [15:0] disp_hex;
@@ -130,8 +145,8 @@ assign debug_menu_sel = sw[14:12];
 // 011 : convertedY - 
 // 100 : status: converted_Y_H , 00000, led2 - spi_odebrane[1], led1 - ?converted_Y led0 - ?6c
 // 101 : angel - converted Y angle
-// 110 : 
-// 111 : 
+// 110 : roll_raw
+// 111 : roll_deg
 // *******D E B U G**************D E B U G**************D E B U G*******
 
 
@@ -195,15 +210,15 @@ always_ff @(posedge clk) begin
             end
             
             3'b101: begin // sw[14]=1, sw[13]=0, sw[12]=1 -> kat Y
-                led <= angel;                                        disp_hex <= angel[15] ? -angel : angel; //clamp angle to cut +-
+                led <= angel;                                         disp_hex <= angel[15] ? -angel : angel; //clamp angle to cut +-
             end
 
-            3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> MIEJSCE NA NOWĄ ZMIENNĄ
-                // led <= ...
+            3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> ROLL_RAW
+                led <= roll_raw;                                      disp_hex <= roll_raw[15] ? -roll_raw : roll_raw; //clamp to cut +- (misses lowest value)
             end
 
-            3'b111: begin // sw[14]=1, sw[13]=1, sw[12]=1 -> MIEJSCE NA NOWĄ ZMIENNĄ
-                // led <= ...
+            3'b111: begin // sw[14]=1, sw[13]=1, sw[12]=1 -> ROLL_DEG
+                led <= roll_deg;                                      disp_hex <= roll_deg[15] ? -roll_deg : roll_deg; //clamp angle to cut +-
             end
 
             default: begin
