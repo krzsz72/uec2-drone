@@ -50,13 +50,13 @@
 //  4) reg_rx/reg_tx : internal register holding the transceived data.
 //
 //  5) poci/copi : wires for serial transmission. Containt single bit informaation 
-//                 that is being currently transceived
+//                 that is being currently transceived; SDI and SDO are, respectively, the serial port data input and output. Those lines are driven at the falling edge of SPC and should be captured at the rising edge of SPC
 //
 
 
 module spi_controller #(
    parameter int BYTEWIDTH=7,
-   parameter logic [BYTEWIDTH-1:0] WIDTH=103 //inout registers width
+   parameter logic [BYTEWIDTH-1:0] WIDTH=104 //inout registers width
    )
    (
     input logic clk, rst_n, //start,
@@ -163,7 +163,7 @@ module spi_controller #(
 
       case(state)
          IDLE: begin
-            sclk_nxt = 1'b0;
+            sclk_nxt = 1'b1;
             cs_n_nxt = 1'b1;
             busy_nxt = 1'b0;
             reg_rx_nxt = '0;
@@ -172,7 +172,7 @@ module spi_controller #(
                busy_nxt     = 1'b1;
                cs_n_nxt     = 1'b0;          
                shift_tx_nxt = reg_tx;
-               copi_nxt     = reg_tx[WIDTH-1];  //shift_tx_nxt jest wczesny o 1 takt
+               //copi_nxt     = reg_tx[WIDTH-1];  //shift_tx_nxt jest wczesny o 1 takt 13082026 juz chb nie?
             end
          end
          
@@ -190,7 +190,7 @@ module spi_controller #(
                end else begin
                   // OPADAJĄCE ZBOCZE: gyro send
                   shift_tx_nxt = {shift_tx[WIDTH-2:0], 1'b0};
-                  copi_nxt = shift_tx_nxt[WIDTH-1]; 
+                  copi_nxt = shift_tx[WIDTH-1]; 
                   if(bit_ctr==d_length)begin
                      cs_n_nxt = 1'b1;
                      busy_nxt = 1'b0;
@@ -202,7 +202,7 @@ module spi_controller #(
          end
          
          DONE: begin
-            sclk_nxt = 1'b0;
+            sclk_nxt = 1'b1;
             cs_n_nxt = 1'b1;
             busy_nxt = 1'b0;
             done_nxt = 1'b0;

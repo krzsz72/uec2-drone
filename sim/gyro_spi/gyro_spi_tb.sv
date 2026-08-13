@@ -100,7 +100,7 @@ module gyro_spi_tb;
             // Podawanie danych na MISO na narastającym zboczu SCLK
             for(int i = 0; i<16;i++) begin
                automatic logic [15:0] data_in = 16'h006c;
-               @(posedge sclk);
+               @(negedge sclk);
                poci = data_in[15-i]; 
             end
          end
@@ -117,7 +117,7 @@ module gyro_spi_tb;
       #25;
       for(int i = 0; i<16;i++) begin
                automatic logic [15:0] data_in = 16'b010;
-               @(posedge sclk);
+               @(negedge sclk);
                poci = data_in[15-i]; 
             end
       wait(cs_n);
@@ -125,7 +125,7 @@ module gyro_spi_tb;
       if(reg_tx=={1'b1,7'h22,96'b0})begin
          for(int i = 0; i<104;i++) begin
                automatic logic [103:0] data_in = {8'h0,16'h1234,16'h5678,16'h9abc,16'hdef0,16'h1234,16'h5678};
-               @(posedge sclk);
+               @(negedge sclk);
                poci = data_in[103-i]; 
             end
          end

@@ -22,10 +22,10 @@ module top_drone#(
         output logic pwm,
         //---PWM---
         input logic spi_start,
-        output logic sclk,
-        input logic poci,
-        output logic cs_n,
-        output logic copi,
+     (*KEEP = "true"*)        output logic sclk,
+     (*KEEP = "true"*)        input logic poci,
+     (*KEEP = "true"*)        output logic cs_n,
+     (*KEEP = "true"*)        output logic copi,
         //---SPI---
         output logic [3:0] an,
         output logic [7:0] sseg,
