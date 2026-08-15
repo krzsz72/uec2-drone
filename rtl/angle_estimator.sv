@@ -64,27 +64,30 @@ module angle_estimator #(
     output logic signed [WIDTH-1:0] angle_deg  //output for PID
    );
 
+
    //uzywamy fixed point arithmetic Q8.8
-   logic signed [39:0] angle_deg_nxt = '0;
-   logic signed [39:0] eval_error ='0;
-   logic signed [39:0] eval_gyro ='0;
+   logic signed [39:0] angle_deg_nxt;
+   logic signed [39:0] eval_error,eval_error_nxt   ;
+   logic signed [39:0] eval_gyro,eval_gyro_nxt    ;
 
    // seq block
    always_ff @(posedge clk) begin
       if(!rst_n) begin
          angle_deg <= '0;
-         
+         eval_error     <='0;
+         eval_gyro      <='0;
       end else begin
-         angle_deg <= angle_deg_nxt[19+(WIDTH/2):19-(WIDTH/2)];
-
+         angle_deg      <= angle_deg_nxt[26:11];//[20+(WIDTH/2)-1:20-(WIDTH/2)];
+         eval_error     <= eval_error_nxt;
+         eval_gyro      <= eval_gyro_nxt;
       end
    end
 
    // fsm block
    always_comb begin
       
-      eval_gyro = angle_deg_nxt + gyro_data;
-      eval_error = accel_data - eval_gyro;
+      eval_gyro_nxt = angle_deg + gyro_data;
+      eval_error_nxt = accel_data - eval_gyro;
       angle_deg_nxt = eval_gyro + (eval_error >>> 8);
 
      end

@@ -30,28 +30,28 @@ module angle_estimator_tb;
     logic signed [39:0] accel_angle_q24;
 
     // Instancja poprawionego modułu
-    convert_accel #(.WIDTH(WIDTH)) accel (
-        .clk(clk),
-        .rst_n(rst_n),
-        .accel_raw_data(accel_angle_q24),
-        .data_latch(data_latch),
-        .mul_result(val_xl)
-    );
+    // convert_accel #(.WIDTH(WIDTH)) accel (
+    //     .clk(clk),
+    //     .rst_n(rst_n),
+    //     .accel_raw_data(accel_angle_q24),
+    //     .data_latch(data_latch),
+    //     .mul_result(val_xl)
+    // );
 
-    convert_gyro#(.WIDTH(WIDTH)) gyro (
-        .clk(clk),
-        .rst_n(rst_n),
-        .gyro_raw_data(gyro_delta_q24),
-        .data_latch(data_latch),
-        .mul_result(val_gyro)
+    // convert_gyro#(.WIDTH(WIDTH)) gyro (
+    //     .clk(clk),
+    //     .rst_n(rst_n),
+    //     .gyro_raw_data(gyro_delta_q24),
+    //     .data_latch(data_latch),
+    //     .mul_result(val_gyro)
 
-    );
+    // );
 
     angle_estimator#(.WIDTH(WIDTH)) dut (
         .clk(clk),
         .rst_n(rst_n),
-        .accel_data(val_xl),
-        .gyro_data(val_gyro),
+        .accel_data(accel_angle_q24),
+        .gyro_data(gyro_delta_q24),
         .angle_deg(angle_deg)
 
     );
