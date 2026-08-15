@@ -10,6 +10,6 @@
 
        
 
-sv work    ../../rtl/unit_converter.sv \
-                unit_converter_tb.sv
+sv work    ../../rtl/convert_gyro.sv \
+                convert_gyro_tb.sv
         

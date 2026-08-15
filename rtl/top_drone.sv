@@ -109,7 +109,7 @@ module top_drone#(
          converter_Y (
           .clk(clk),
           .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[79:65]),
+          .gyro_raw_data(spi_odebrane[79:64]),
           .data_latch(gyro_read_done),
           .angle_deg(angel),
           .angle_raw(),

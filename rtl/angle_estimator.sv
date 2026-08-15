@@ -1,7 +1,7 @@
 //******************************************************************************
 //       ______________________________________________
 //      |                                              |
-//      | unit converter     (WIP)                     |
+//      | angle estimator    (WIP)                     |
 //      |______________________________________________|
 //      |                                              |
 //      |    Parameters and defaults                   |
@@ -54,54 +54,39 @@
 //
 
 
-module unit_converter #(
+module angle_estimator #(
    parameter int WIDTH=16 //inout registers width
    )
    (
     input logic clk, rst_n,
-    input logic signed [WIDTH-1:0] gyro_raw_data,
-    input logic data_latch,
-    output logic signed [WIDTH-1:0] angle_raw,
-    output logic signed [WIDTH-1:0] angle_deg,
-    output logic signed [WIDTH-1:0] latched_raw,
-    output logic signed [39:0] mul_result
+    input logic signed [39:0] accel_data,
+    input logic signed [39:0] gyro_data,
+    output logic signed [WIDTH-1:0] angle_deg  //output for PID
    );
 
-   //uzywamy fixed point arithmetic Q15.24
-   logic signed [39:0] mul_result_nxt;
-   logic signed [WIDTH-1:0] angle_raw_nxt;
-   logic signed [WIDTH-1:0] angle_deg_nxt;
-   logic signed [WIDTH-1:0] latched_raw_nxt;
-   
+   //uzywamy fixed point arithmetic Q8.8
+   logic signed [39:0] angle_deg_nxt = '0;
+   logic signed [39:0] eval_error ='0;
+   logic signed [39:0] eval_gyro ='0;
+
    // seq block
    always_ff @(posedge clk) begin
       if(!rst_n) begin
          angle_deg <= '0;
-         angle_raw <= '0;
-         mul_result <= '0;
-         latched_raw <= '0;
-
+         
       end else begin
-         angle_deg <= angle_deg_nxt;
-         angle_raw <= angle_raw_nxt;
-         mul_result <= mul_result_nxt;
-         latched_raw <= latched_raw_nxt;
+         angle_deg <= angle_deg_nxt[19+(WIDTH/2):19-(WIDTH/2)];
+
       end
    end
 
    // fsm block
    always_comb begin
-      angle_deg_nxt = angle_deg;
-      angle_raw_nxt = angle_raw;
-      mul_result_nxt = mul_result;
+      
+      eval_gyro = angle_deg_nxt + gyro_data;
+      eval_error = accel_data - eval_gyro;
+      angle_deg_nxt = eval_gyro + (eval_error >>> 8);
 
-      if(!data_latch)begin
-         angle_raw_nxt = {gyro_raw_data[7:0],gyro_raw_data[15:8]};
-      end else begin
-         mul_result_nxt = mul_result + (angle_raw * 40'sd176 ); // 176 wynika z (1/6.6khz) * 0.07deg/s
-         angle_deg_nxt = mul_result_nxt[39:24] ;
-         latched_raw_nxt = angle_raw ;
-      end
      end
 
 endmodule

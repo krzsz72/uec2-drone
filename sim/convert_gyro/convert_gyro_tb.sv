@@ -7,7 +7,7 @@
 // ********************************
 `timescale 1ns/1ps
 
-module unit_converter_tb;
+module convert_gyro_tb;
 
     localparam int WIDTH = 16;
 
@@ -19,7 +19,7 @@ module unit_converter_tb;
     logic signed [WIDTH-1:0] angle_deg;
 
     // Instancja poprawionego modułu
-    unit_converter #(.WIDTH(WIDTH)) dut (
+    convert_gyro #(.WIDTH(WIDTH)) dut (
         .clk(clk),
         .rst_n(rst_n),
         .gyro_raw_data(gyro_raw_data),
@@ -42,7 +42,7 @@ module unit_converter_tb;
     end
 
     // Zmienne symulacyjne dla SPI
-    logic [15:0] test_data = 16'habcd; // Dane do przesłania
+    logic [15:0] test_data = 16'h0100; // Dane do przesłania
     logic [15:0] shift_reg = '0;
     logic copi = 0;
     int   bit_cnt  = 0;
