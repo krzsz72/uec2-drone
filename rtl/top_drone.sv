@@ -75,8 +75,12 @@ module top_drone#(
     logic signed [15:0] converted_Y;
     logic signed [15:0] angel; //👼
     logic [1:0] gyro_state;
+
+    logic signed [39:0] rollq24;
+    logic signed [39:0] gyroYq24;
+
     logic gyro_read_done;
-    assign gyro_read_done = ((gyro_state==2'b10) & spi_done); //nie pojawia sie w trbie ciaglym
+    assign gyro_read_done = ((gyro_state==2'b10) & spi_done); 
     gyro #( )
      gyro (
         .clk(clk),
@@ -103,7 +107,7 @@ module top_drone#(
          .done(spi_done)
       );
 
-      unit_converter #(
+      convert_gyro #(
         .WIDTH(16)
         )
          converter_Y (
@@ -113,7 +117,8 @@ module top_drone#(
           .data_latch(gyro_read_done),
           .angle_deg(angel),
           .angle_raw(),
-          .latched_raw(converted_Y)
+          .latched_raw(converted_Y),
+          .mul_result(gyroYq24)
       );
 
       convert_accel #(.WIDTH(16) )
@@ -125,8 +130,19 @@ module top_drone#(
         .angle_deg(roll_deg),
         .angle_raw(),
         .latched_raw(roll_raw),
-        .mul_result()
+        .mul_result(rollq24)
       );
+
+  
+    logic signed [15:0] estim_roll;
+    angle_estimator #() estimator_roll (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_data(rollq24),
+        .gyro_data(gyroYq24),
+        .angle_deg(estim_roll)
+    );
+
 
 
 // --- DEKLARACJE POMOCNICZE ---
@@ -144,8 +160,8 @@ assign debug_menu_sel = sw[14:12];
 // 010 : spi_odebrane - odebrane dane
 // 011 : convertedY - 
 // 100 : status: converted_Y_H , 00000, led2 - spi_odebrane[1], led1 - ?converted_Y led0 - ?6c
-// 101 : angel - converted Y angle
-// 110 : roll_raw
+// 101 : angel - Y angle deegrees per second
+// 110 : estimated_angle_roll
 // 111 : roll_deg
 // *******D E B U G**************D E B U G**************D E B U G*******
 
@@ -214,7 +230,7 @@ always_ff @(posedge clk) begin
             end
 
             3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> ROLL_RAW
-                led <= roll_raw;                                      disp_hex <= roll_raw[15] ? -roll_raw : roll_raw; //clamp to cut +- (misses lowest value)
+                led <= estim_roll;                                      disp_hex <= estim_roll[15] ? -estim_roll : estim_roll; //clamp to cut +- (misses lowest value)
             end
 
             3'b111: begin // sw[14]=1, sw[13]=1, sw[12]=1 -> ROLL_DEG
