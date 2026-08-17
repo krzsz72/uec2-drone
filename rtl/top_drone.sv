@@ -69,15 +69,22 @@ module top_drone#(
     // wire spi_loopback;
      (*KEEP = "true"*)
     logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
-    logic [6:0] data_length;
+        logic [6:0] data_length;
     logic signed [15:0] roll_raw;
     logic signed [15:0] roll_deg;
+    logic signed [15:0] pitch_raw;
+    logic signed [15:0] pitch_deg;
     logic signed [15:0] converted_Y;
-    logic signed [15:0] angel; //👼
+    logic signed [15:0] converted_X;
+    logic signed [15:0] converted_Z;
+        logic signed [15:0] angel; //👼
     logic [1:0] gyro_state;
 
     logic signed [39:0] rollq24;
+    logic signed [39:0] pitchq24;
+    logic signed [39:0] gyroXq24;
     logic signed [39:0] gyroYq24;
+    logic signed [39:0] gyroZq24;
 
     logic gyro_read_done;
     assign gyro_read_done = ((gyro_state==2'b10) & spi_done); 
@@ -89,7 +96,8 @@ module top_drone#(
         .d_out(odczytwartosc),
         .ready( (spi_done && sw[15]) | spi_start),
         .gyro_data( (&spi_odebrane[1:0]) ),
-        .state_curr(gyro_state)
+        .state_curr(gyro_state),
+        .state_prev()
     );
 
      spi_controller #( )
@@ -121,18 +129,58 @@ module top_drone#(
           .mul_result(gyroYq24)
       );
 
+      convert_gyro #(
+        .WIDTH(16)
+        )
+         converter_X (
+          .clk(clk),
+          .rst_n(~btnReset),
+          .gyro_raw_data(spi_odebrane[95:80]),
+          .data_latch(gyro_read_done),
+          .angle_deg(converted_X),
+          .angle_raw(),
+          .latched_raw(),
+          .mul_result(gyroXq24)
+      );
+
+      convert_gyro #(
+        .WIDTH(16)
+        )
+         converter_Z (
+          .clk(clk),
+          .rst_n(~btnReset),
+          .gyro_raw_data(spi_odebrane[63:48]),
+          .data_latch(gyro_read_done),
+          .angle_deg(),
+          .angle_raw(),
+          .latched_raw(converted_Z),
+          .mul_result(gyroZq24)
+      );
+
+
+      convert_accel #(.WIDTH(16) )
+       accel_pitch (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_raw_data(spi_odebrane[31:16]),
+        .data_latch(gyro_read_done),
+        .angle_deg(pitch_deg),
+        .angle_raw(),
+        .latched_raw(pitch_raw),
+        .mul_result(pitchq24)
+      );
+
       convert_accel #(.WIDTH(16) )
        accel_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[31:16]),
+        .accel_raw_data(spi_odebrane[47:32]),
         .data_latch(gyro_read_done),
         .angle_deg(roll_deg),
         .angle_raw(),
         .latched_raw(roll_raw),
         .mul_result(rollq24)
       );
-
   
     logic signed [15:0] estim_roll;
     angle_estimator #() estimator_roll (
@@ -141,6 +189,15 @@ module top_drone#(
         .accel_data(rollq24),
         .gyro_data(gyroYq24),
         .angle_deg(estim_roll)
+    );
+
+    logic signed [15:0] estim_pitch;
+    angle_estimator #() estimator_pitch (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_data(pitchq24),
+        .gyro_data(gyroXq24),
+        .angle_deg(estim_pitch)
     );
 
 
@@ -158,11 +215,11 @@ assign debug_menu_sel = sw[14:12];
 // sw15 - tryb ciagly gyro, sw14,sw13,sw12:
 // 001 : odczytwartosc - nadawanawartosc
 // 010 : spi_odebrane - odebrane dane
-// 011 : convertedY - 
+// 011 : convertedY, convertedX, convertedZ
 // 100 : status: converted_Y_H , 00000, led2 - spi_odebrane[1], led1 - ?converted_Y led0 - ?6c
 // 101 : angel - Y angle deegrees per second
-// 110 : estimated_angle_roll
-// 111 : roll_deg
+// 110 : estimated_angle_roll, estimated_angle_pitch
+// 111 : roll_deg, pitch_deg, yaw_deg
 // *******D E B U G**************D E B U G**************D E B U G*******
 
 
@@ -217,7 +274,11 @@ always_ff @(posedge clk) begin
             end
 
             3'b011: begin // sw[14]=0, sw[13]=1, sw[12]=1 -> CONVERTED_Y
-                led <= converted_Y;                                    disp_hex <= converted_Y[15] ? -converted_Y : converted_Y; //clamp to cut +- (misses lowest value)
+                case(page_cnt)
+                    3'b00: begin led <= converted_Y;                                    disp_hex <= converted_Y[15] ? -converted_Y : converted_Y; end //clamp to cut +- (misses lowest value)
+                    3'b01: begin led <= converted_X;                                    disp_hex <= converted_X[15] ? -converted_X : converted_X; end //clamp to cut +- (misses lowest value)
+                    3'b10: begin led <= converted_Z;                                    disp_hex <= converted_Z[15] ? -converted_Z : converted_Z; end //clamp to cut +- (misses lowest value)
+                endcase
             end
 
             3'b100: begin // sw[14]=1, sw[13]=0, sw[12]=0 -> FLAGI STATUSU
@@ -230,11 +291,18 @@ always_ff @(posedge clk) begin
             end
 
             3'b110: begin // sw[14]=1, sw[13]=1, sw[12]=0 -> ROLL_RAW
-                led <= estim_roll;                                      disp_hex <= estim_roll[15] ? -estim_roll : estim_roll; //clamp to cut +- (misses lowest value)
+                case(page_cnt)
+                    3'b00: begin led <= estim_roll;                                      disp_hex <= estim_roll[15] ? -estim_roll : estim_roll; end //clamp to cut +- (misses lowest value)
+                    3'b01: begin led <= estim_pitch;                                      disp_hex <= estim_pitch[15] ? -estim_pitch : estim_pitch; end //clamp to cut +- (misses lowest value)
+                    
+                endcase
             end
 
             3'b111: begin // sw[14]=1, sw[13]=1, sw[12]=1 -> ROLL_DEG
-                led <= roll_deg;                                      disp_hex <= roll_deg[15] ? -roll_deg : roll_deg; //clamp angle to cut +-
+                case(page_cnt)
+                    3'b00: begin led <= roll_deg;                                      disp_hex <= roll_deg[15] ? -roll_deg : roll_deg; end //clamp angle to cut +-
+                    3'b01: begin led <= pitch_deg;                                      disp_hex <= pitch_deg[15] ? -pitch_deg : pitch_deg; end //clamp angle to cut +-
+                endcase
             end
 
             default: begin
@@ -252,7 +320,7 @@ end
         .hex2(disp_hex[11:8]), 
         .hex1(disp_hex[7:4]), 
         .hex0(disp_hex[3:0]), 
-        .dp_in(4'b1111),       // Wygaszone kropki
+        .dp_in({1'b1,page_cnt}),       // kropki jako page_cntr
         .an(an),
         .sseg(sseg)
     );
