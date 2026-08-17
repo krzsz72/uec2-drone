@@ -93,7 +93,7 @@ module angle_estimator #(
    // fsm block
    always_comb begin
       
-      eval_gyro_nxt = angle_deg + gyro_data;
+      eval_gyro_nxt = eval_gyro + gyro_data;
       eval_error_nxt = accel_data - eval_gyro;
       angle_deg_nxt = eval_gyro + (eval_error >>> 8);
 
