@@ -297,13 +297,6 @@ set_property IOSTANDARD LVCMOS33 [get_ports {JC[7]}]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
 set_property CFGBVS VCCO [current_design]
 
-
-
-connect_debug_port u_ila_0/probe1 [get_nets [list {page_cnt[0]} {page_cnt[1]}]]
-connect_debug_port u_ila_0/probe7 [get_nets [list u_top_drone/gyro_read_done]]
-
-
-
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
 set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
