@@ -1,7 +1,8 @@
 ## komenda do git basha na windowsie w celu ustawienia patha lub czegos tam ¯\\\_(ツ)_/¯ :
 ```bash
 export VIVADO_DIR=/c/Xilinx/2025.1/Vivado;
-export PATH=${VIVADO_DIR}/bin:${PATH} 
+export PATH=${VIVADO_DIR}/bin:${PATH} ;
+. env.sh
 ```
 
 zapytac sie:

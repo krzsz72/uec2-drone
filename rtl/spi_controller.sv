@@ -5,14 +5,16 @@
 //      |______________________________________________|
 //      |                                              |
 //      |    Parameters and defaults                   |
-//      |        WIDTH  = 8  bits                      | 
+//      |        WIDTH  = 16  bits                     | 
 //      |                                              |
 //      |                                              |
-//  ----| start                                   sclk |----
+//      |                                              |
+//  ----| d_length (start)                        sclk |----
 //  ==8=| reg_tx                                reg_rx |=8==
 //  ----| poci                                    copi |----
-//      |                                              |
-//  ----| clk                                          |
+//      |                                         done |----
+//  ----| clk                                     busy |----
+//      |                                         cs_n |----
 //      |______________________________________________|
 //
 //** Description ***************************************************************
@@ -22,16 +24,19 @@
 //** Sample Instantiation ******************************************************
 //
 //    spi_controller #(
-//        .WIDTH(8)
+//        .WIDTH(16)
 //    )
 //    spi_controller(
 //        .clk(clk),
 //        .start(start),
 //        .sclk(sclk),
+//        .cs_n(cs_n),
 //        .reg_rx(reg_rx),
 //        .reg_tx(reg_tx),
 //        .poci(poci),
-//        .copi(copi)
+//        .copi(copi),
+//        .busy(busy),
+//        .done(done)
 //    );
 //
 //** Signals: ************************************************************
@@ -45,16 +50,19 @@
 //  4) reg_rx/reg_tx : internal register holding the transceived data.
 //
 //  5) poci/copi : wires for serial transmission. Containt single bit informaation 
-//                 that is being currently transceived
+//                 that is being currently transceived; SDI and SDO are, respectively, the serial port data input and output. Those lines are driven at the falling edge of SPC and should be captured at the rising edge of SPC
 //
 
 
 module spi_controller #(
-   parameter logic [3:0] WIDTH=8 //inout registers width
+   parameter int BYTEWIDTH=7,
+   parameter logic [BYTEWIDTH-1:0] WIDTH=104 //inout registers width
    )
    (
-    input logic clk, start,
+    input logic clk, rst_n, //start,
+    input logic [BYTEWIDTH-1:0] d_length,
     output logic sclk,
+    output logic cs_n,
    //controller receive
     output logic [WIDTH-1:0] reg_rx,
     input logic poci,
@@ -68,62 +76,137 @@ module spi_controller #(
    typedef enum logic [1:0] {IDLE, BUSY, DONE} fsm_state_t;
     fsm_state_t state, state_nxt = IDLE;
 
-   logic [WIDTH-1:0] reg_rx_nxt;
-   logic copi_reg_nxt, copi_reg, sclk_nxt, busy_nxt, done_nxt;
-   logic [WIDTH-1:0] bit_ctr, bit_ctr_nxt;
+   logic [WIDTH-1:0] reg_rx_nxt, shift_tx, shift_tx_nxt;
+   logic copi_nxt, sclk_nxt, busy_nxt, done_nxt, cs_n_nxt;
+   logic [BYTEWIDTH-1:0] bit_ctr, bit_ctr_nxt; // 6 bitów, żeby policzyć do 103 (..64)
 
-   //seq logic
-   always_ff @(posedge clk)begin
-      copi_reg<=copi_reg_nxt;
-      reg_rx<=reg_rx_nxt;
-      sclk<=sclk_nxt;
-      done<=done_nxt;
-      bit_ctr<=bit_ctr_nxt;
-      busy<=busy_nxt;
-      state<=state_nxt;
+   //prescaler  100MHz na 1MHz =50 (sclk dziala przez flipflop wiec dodatkowe przez pol)
+   localparam CLK_DIVIDER = 50;
+   logic [5:0] clk_div, clk_div_nxt;
+   logic spi_tick;
+   //logic [WIDTH-1:0] d_length = data_length;
+
+   // seq block
+   always_ff @(posedge clk) begin
+      if(!rst_n) begin
+         state    <= IDLE;
+         reg_rx   <= '0;
+         shift_tx <= '0;
+         copi     <= '0;
+         sclk     <= '0;
+         cs_n     <= '1;
+         busy     <= '0;
+         done     <= '0;
+         bit_ctr  <= '0;
+         clk_div  <= '0;
+      end else begin
+         state    <= state_nxt;
+         reg_rx   <= reg_rx_nxt;
+         shift_tx <= shift_tx_nxt;
+         copi     <= copi_nxt;
+         sclk     <= sclk_nxt;
+         cs_n     <= cs_n_nxt;
+         busy     <= busy_nxt;
+         done     <= done_nxt;
+         bit_ctr  <= bit_ctr_nxt;
+         clk_div  <= clk_div_nxt;
+      end
    end
 
-   //fsm logic
+   // fsm block
    always_comb begin
+      state_nxt   = state;
+      bit_ctr_nxt = bit_ctr;
+      clk_div_nxt = clk_div;
+      spi_tick    = 1'b0;
+
       case(state)
          IDLE: begin
-            bit_ctr_nxt='0;
-            if(start) state_nxt=BUSY;
+            bit_ctr_nxt = '0;
+            clk_div_nxt = '0;
+            if (d_length && !bit_ctr) state_nxt = BUSY;
          end
+         
          BUSY: begin
-            if(bit_ctr==WIDTH) state_nxt=DONE;
-            if(sclk) bit_ctr_nxt = bit_ctr+1;
+            if (clk_div == CLK_DIVIDER-1) begin
+               clk_div_nxt = '0;
+               spi_tick = 1'b1;
+            end else begin
+               clk_div_nxt = clk_div + 1;
+            end
+
+            if (spi_tick && sclk == 1'b1) begin
+               bit_ctr_nxt = bit_ctr + 1;
+               if (bit_ctr == d_length) begin
+                  state_nxt = DONE;
+               end
+            end
          end
+         
          DONE: begin
-            state_nxt=IDLE;
+            state_nxt = IDLE;
          end
-         default: state_nxt=IDLE;
+         
+         default: state_nxt = IDLE;
       endcase
    end
 
-   //reg logic
+   // reg block
    always_comb begin
-      assign copi = copi_reg; //(state == BUSY) ? copi_reg : 1'bz;
+      sclk_nxt     = sclk;
+      busy_nxt     = busy;
+      done_nxt     = 1'b0;
+      cs_n_nxt     = cs_n;
+      copi_nxt     = copi;
+      shift_tx_nxt = shift_tx;
+      reg_rx_nxt   = reg_rx;
 
       case(state)
          IDLE: begin
-            sclk_nxt='1;
-            busy_nxt='0;
-            done_nxt='0;
-            copi_reg_nxt = 1'bz;
-         end
-         BUSY: begin
-            sclk_nxt=~sclk;
-            busy_nxt='1;
-            if(sclk) begin
-               reg_rx_nxt = {reg_rx[WIDTH-2:0],poci};
-               copi_reg_nxt = reg_tx[WIDTH-1-bit_ctr];
+            sclk_nxt = 1'b1;
+            cs_n_nxt = 1'b1;
+            busy_nxt = 1'b0;
+            reg_rx_nxt = '0;
+            
+            if (d_length) begin
+               busy_nxt     = 1'b1;
+               cs_n_nxt     = 1'b0;          
+               shift_tx_nxt = reg_tx;
+               //copi_nxt     = reg_tx[WIDTH-1];  //shift_tx_nxt jest wczesny o 1 takt 13082026 juz chb nie?
             end
          end
-         DONE: begin
-            done_nxt='1;
-         end
+         
+         BUSY: begin
+            busy_nxt = 1'b1;
+            cs_n_nxt = 1'b0;
+            done_nxt = 1'b0;
+            
+            if (spi_tick) begin
+               sclk_nxt = ~sclk;
+            
+               if (~sclk == 1'b1) begin
+                  // ROSNĄCE ZBOCZE: gyro read  
+                  reg_rx_nxt = {reg_rx[WIDTH-2:0], poci};
+               end else begin
+                  // OPADAJĄCE ZBOCZE: gyro send
+                  shift_tx_nxt = {shift_tx[WIDTH-2:0], 1'b0};
+                  copi_nxt = shift_tx[WIDTH-1]; 
+                  if(bit_ctr==d_length)begin
+                     cs_n_nxt = 1'b1;
+                     busy_nxt = 1'b0;
+                     done_nxt = 1'b1;
+                  end
+               end
 
+            end
+         end
+         
+         DONE: begin
+            sclk_nxt = 1'b1;
+            cs_n_nxt = 1'b1;
+            busy_nxt = 1'b0;
+            done_nxt = 1'b0;
+         end
       endcase
    end
 

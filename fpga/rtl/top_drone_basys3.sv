@@ -15,10 +15,15 @@
 module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
-    input wire sw1,
-    input wire sw2,
+    input  wire btnR,
+    input wire [15:0] sw,
     input wire btnU,
-    output wire JB10
+    output wire JB10,
+    output wire [7:1] JC, //ostatecznie lepiej zrezygnowac z tablicy JC i zrobic ladne nazwy w .xdc
+    input wire JC_input,
+    output wire [7:0] sseg,
+    output wire [3:0] an,
+    output wire [15:0] led
 
     );
 
@@ -113,18 +118,66 @@ module top_drone_basys3 (
     );
 
 
-    /**
+    /** #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      *  Project functional top module
+     *  #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      */
 
-    assign pwm_data= (sw2) ? 8'd10 : 8'd15;
+    assign pwm_data= (sw[1]) ? 8'd10 : 8'd15;
+    wire btnU_tick;
+
+      debounce btnU_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnU),
+         .db_level(),
+         .db_tick(btnU_tick)
+      );
+
+      debounce btnR_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnR),
+         .db_level(),
+         .db_tick(btnR_pulse)
+      );
+      wire copi;
+      wire sclk;
+      wire poci;
+      wire cs_n;
+
+      assign JC[3] = copi;
+      assign JC[7] = copi;
+
+      assign JC[2] =sclk;
+      assign JC[6] = sclk;
+
+      assign poci = JC_input;
+      assign JC[5] = poci; //porty w xdc sa inaczej numerowane ofc smh 🙄
+
+      assign JC[1] =cs_n;
+      assign JC[4] = cs_n;
 
     top_drone u_top_drone (
         .clk  (pclk),
-        .rst  (btnC),
+        .rst  (),
         .d_in (pwm_data),
-        .enable(sw1),
-        .pwm(JB10)
+        .enable(sw[0]),
+        .pwm(JB10),
+        .copi(copi),
+        .sclk(sclk),
+        .poci(poci),
+        .cs_n(cs_n),
+        .spi_start(btnU_tick),
+        .an,
+        .sseg,
+        .led(led[15:0]),
+        .button(btnU),
+        .btnR_pulse(btnR_pulse),
+        .btnReset(btnC),
+        .sw(sw)
         );
 
+        
+    
 endmodule

@@ -32,6 +32,10 @@ set xdc_files {
 # Specify SystemVerilog design files location   -- EDIT
 set sv_files {
     ../rtl/spi_controller.sv
+    ../rtl/gyro.sv
+    ../rtl/convert_gyro.sv
+    ../rtl/convert_accel.sv
+    ../rtl/angle_estimator.sv
     ../rtl/top_drone.sv
     rtl/top_drone_basys3.sv
 }
@@ -39,6 +43,9 @@ set sv_files {
 # Specify Verilog design files location         -- EDIT
 set verilog_files {
     ../rtl/pwm.v
+    ../rtl/disp_hex_mux.v
+    ../rtl/debounce.v
+
 }
 
 # Specify VHDL design files location            -- EDIT
