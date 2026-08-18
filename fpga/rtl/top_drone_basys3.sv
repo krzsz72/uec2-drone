@@ -41,8 +41,6 @@ module top_drone_basys3 (
     wire pclk;
     wire pclk_mirror;
 
-    logic [7:0] pwm_data;
-
     (* KEEP = "TRUE" *)
     (* ASYNC_REG = "TRUE" *)
     logic [7:0] safe_start = 0;
@@ -125,7 +123,6 @@ module top_drone_basys3 (
      *  #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      */
 
-    assign pwm_data= (sw[1]) ? 8'd10 : 8'd15;
     wire btnU_tick;
 
       debounce btnU_db (
@@ -187,8 +184,7 @@ module top_drone_basys3 (
     top_drone u_top_drone (
         .clk  (pclk),
         .rst  (),
-        .d_in (pwm_data),
-        .enable(sw[0]),
+        .enable(sw[0]), // General PWM enable switch
         .motor_pwm_out(motor_pwm),
         .copi(copi),
         .sclk(sclk),

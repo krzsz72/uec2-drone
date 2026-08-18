@@ -1,9 +1,9 @@
 `timescale 1ns / 1ps
 
 module motor_mixer #(
-    parameter MIN_PULSE = 15'd1000,
+    parameter MIN_PULSE = 15'd800,
     parameter MAX_PULSE = 15'd2000,
-    parameter INIT_PULSE = 15'd900
+    parameter INIT_PULSE = 15'd800
 ) (
     input  wire        clk,
     input  wire        rst_n,

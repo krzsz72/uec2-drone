@@ -64,9 +64,10 @@ module pwm #(
 
    
    // signal declaration
+   localparam PRESCALE_W = $clog2(MAX_TICK + 1);
    reg [14:0] D;   //data buffer reg
    reg tick_100us;
-   reg [6:0] prescale_cnt;
+   reg [PRESCALE_W-1:0] prescale_cnt;
 
 
    always @(posedge clk) begin
@@ -93,7 +94,7 @@ module pwm #(
          if(tick_100us)begin
             if(cnt>=MAX_PWM)begin
                cnt<=15'd0;
-               if(d_in>8'd20000) D<=15'd20000;
+               if(d_in>15'd20000) D<=15'd20000;
                else D<=d_in;
             end else begin
                cnt<=cnt+1'd1;

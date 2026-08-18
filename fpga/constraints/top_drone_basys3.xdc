@@ -318,7 +318,7 @@ connect_debug_port u_ila_0/probe1 [get_nets [list {JC_OBUF[1]} {JC_OBUF[2]} {JC_
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
 set_property port_width 16 [get_debug_ports u_ila_0/probe2]
-connect_debug_port u_ila_0/probe2 [get_nets [list {led_OBUF[0]} {led_OBUF[1]} {led_OBUF[2]} {led_OBUF[3]} {led_OBUF[4]} {led_OBUF[5]} {led_OBUF[6]} {led_OBUF[7]} {led_OBUF[8]} {led_OBUF[9]} {led_OBUF[10]} {led_OBUF[11]} {led_OBUF[12]} {led_OBUF[13]} {led_OBUF[14]} {led_OBUF[15]}]]
+connect_debug_port u_ila_0/probe2 [get_nets [list {u_top_drone/led_reg[0]} {u_top_drone/led_reg[1]} {u_top_drone/led_reg[2]} {u_top_drone/led_reg[3]} {u_top_drone/led_reg[4]} {u_top_drone/led_reg[5]} {u_top_drone/led_reg[6]} {u_top_drone/led_reg[7]} {u_top_drone/led_reg[8]} {u_top_drone/led_reg[9]} {u_top_drone/led_reg[10]} {u_top_drone/led_reg[11]} {u_top_drone/led_reg[12]} {u_top_drone/led_reg[13]} {u_top_drone/led_reg[14]} {u_top_drone/led_reg[15]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
 set_property port_width 104 [get_debug_ports u_ila_0/probe3]
