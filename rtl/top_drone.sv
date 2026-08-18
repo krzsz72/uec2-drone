@@ -13,7 +13,7 @@
  */
 
 module top_drone#(
-    parameter MAX_TICK = 14'd9999
+    parameter MAX_TICK = 7'd99 // Changed from 14'd9999 to 7'd99 for 1us tick
 ) (
         input  logic clk,
         input  logic rst,
@@ -137,15 +137,22 @@ module top_drone#(
     );
 
     // --- Simple PWM Test Logic ---
-    // To simplify debugging, all complex logic (PID, FSM, Mixer) is bypassed.
-    // The motors are now directly controlled by sw[0].
-    // When sw[0] is ON, all motors get a fixed test pulse width (1100us).
-    // This allows for basic hardware verification (PWM generation, motor connection).
+    // Simplified test mode. sw[0] is the main enable switch.
+    // Switches sw[10:1] control the pulse width from 900us to 1600us.
+    // This allows for manual control and verification of the ESCs and motors.
+    logic [14:0] test_pulse_width;
+    logic [9:0] pulse_offset;
+
+    assign pulse_offset = sw[10:1]; // Use switches 10 down to 1 for control (10 bits)
+    // Base pulse is 900us. Switches add 0-700us.
+    // The value from switches is clamped to 700 to stay within the 900-1600us range.
+    assign test_pulse_width = 15'd900 + (pulse_offset > 10'd700 ? 10'd700 : pulse_offset);
+
     logic [14:0] m_width[4];
-    assign m_width[0] = enable ? 15'd1100 : 15'd0;
-    assign m_width[1] = enable ? 15'd1100 : 15'd0;
-    assign m_width[2] = enable ? 15'd1100 : 15'd0;
-    assign m_width[3] = enable ? 15'd1100 : 15'd0;
+    assign m_width[0] = enable ? test_pulse_width : 15'd0;
+    assign m_width[1] = enable ? test_pulse_width : 15'd0;
+    assign m_width[2] = enable ? test_pulse_width : 15'd0;
+    assign m_width[3] = enable ? test_pulse_width : 15'd0;
 
     // Instantiate 4 PWM modules
     genvar i;
