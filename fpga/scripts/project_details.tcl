@@ -48,6 +48,7 @@ set sv_files {
     ../rtl/angle_estimator.sv
     ../rtl/top_drone.sv
     ../rtl/PID.sv 
+    ../rtl/motor_mixer.sv 
     rtl/top_drone_basys3.sv
 }
 

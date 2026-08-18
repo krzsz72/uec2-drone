@@ -19,8 +19,8 @@ module top_drone#(
         input  logic rst,
         input  logic enable,
         input  logic [7:0] d_in,
-        output logic pwm,
         //---PWM---
+        output logic [3:0] motor_pwm_out,
         input logic spi_start,
      (*KEEP = "true"*)        output logic sclk,
      (*KEEP = "true"*)        input logic poci,
@@ -31,6 +31,7 @@ module top_drone#(
         output logic [7:0] sseg,
         output logic [15:0] led,
         input logic button,
+        input logic btnD_pulse,
         input logic btnL_pulse,
         input logic btnR_pulse,
         input logic btnReset,
@@ -52,18 +53,6 @@ module top_drone#(
      * Submodules instances
      */
 
-     logic [14:0] pwm_input;
-     logic [14:0] pwm_from_pid_module;
-
-     pwm #(
-        .MAX_TICK(MAX_TICK)
-     ) u_pwm50Hz(
-        .clk,
-        .enable,
-        .d_in(pwm_input),
-        .pwm
-     );
-   
      //logic [6:0] destination = 7'h0F;
      //logic [7:0] data_write;
      //logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
@@ -147,36 +136,6 @@ module top_drone#(
         .angle_deg(estim_roll)
     );
 
-    // --- Multi-motor mixing and selection ---
-    localparam [14:0] BASE_THROTTLE = 15'd1500;
-    localparam [14:0] PWM_MIN = 15'd1000;
-    localparam [14:0] PWM_MAX = 15'd2000;
-
-    logic [1:0] displayed_motor_idx; // 0:M1(FR), 1:M2(BR), 2:M3(FL), 3:M4(BL)
-    logic [14:0] pwm_motor[4];
-
-    always_comb begin
-        logic signed [15:0] motor_pwm_val[4];
-        // Simplified mixing for roll control on an X-frame quad
-        // Right side motors (1 and 2) get negative roll correction
-        // Left side motors (3 and 4) get positive roll correction
-        motor_pwm_val[0] = BASE_THROTTLE - pid_output_debug; // M1: Front-Right
-        motor_pwm_val[1] = BASE_THROTTLE - pid_output_debug; // M2: Back-Right
-        motor_pwm_val[2] = BASE_THROTTLE + pid_output_debug; // M3: Front-Left
-        motor_pwm_val[3] = BASE_THROTTLE + pid_output_debug; // M4: Back-Left
-
-        // Clamp all motor values
-        for (int i = 0; i < 4; i++) begin
-            if (motor_pwm_val[i] > PWM_MAX) begin
-                pwm_motor[i] = PWM_MAX;
-            end else if (motor_pwm_val[i] < PWM_MIN) begin
-                pwm_motor[i] = PWM_MIN;
-            end else begin
-                pwm_motor[i] = motor_pwm_val[i][14:0];
-            end
-        end
-    end
-
     // PID Controller instance
     logic signed [15:0] pid_error_debug;
     logic signed [31:0] pid_integral_debug;
@@ -195,16 +154,121 @@ module top_drone#(
         .Kp_in(sw[7:5]),
         .Ki_in(sw[4:2]),
         .Kd_in(sw[1:0]),
-        .pwm_from_pid(pwm_from_pid_module),
+        .pwm_from_pid(), // Not used directly anymore
         .pid_error_out(pid_error_debug),
         .pid_integral_out(pid_integral_debug),
         .pid_derivative_out(pid_derivative_debug),
         .pid_output_out(pid_output_debug)
     );
 
-    // Select PWM input for the motor
-    // If sw[11] is high, use PID output for motor 0; otherwise, use direct d_in from switches
-    assign pwm_input = sw[11] ? pwm_motor[0] : {7'b0, d_in};
+    // --- Startup Sequence and Motor Mixer Integration ---
+    typedef enum logic [1:0] { FSM_IDLE, FSM_WAIT, FSM_RAMP, FSM_RUN } startup_fsm_state_t;
+    startup_fsm_state_t startup_state, startup_state_nxt;
+
+    typedef enum logic [1:0] { MODE_INIT, MODE_ARMED, MODE_RUN } mixer_mode_t;
+    mixer_mode_t mixer_mode, mixer_mode_nxt;
+
+    logic [15:0] throttle_out, throttle_out_nxt;
+
+    // Counters
+    logic [27:0] wait_counter, wait_counter_nxt;
+    logic [27:0] ramp_step_counter, ramp_step_counter_nxt;
+
+    localparam WAIT_TIME = 28'd200_000_000; // 2s @ 100MHz
+    localparam RAMP_STEP_TIME = 28'd10_000_000; // 100ms per step
+    localparam RAMP_STEPS = 500; // 1500 - 1000
+
+    // Startup FSM - Sequential Part
+    always_ff @(posedge clk, posedge btnReset) begin
+        if (btnReset) begin
+            startup_state <= FSM_IDLE;
+            mixer_mode <= MODE_INIT;
+            throttle_out <= 0;
+            wait_counter <= 0;
+            ramp_step_counter <= 0;
+        end else begin
+            startup_state <= startup_state_nxt;
+            mixer_mode <= mixer_mode_nxt;
+            throttle_out <= throttle_out_nxt;
+            wait_counter <= wait_counter_nxt;
+            ramp_step_counter <= ramp_step_counter_nxt;
+        end
+    end
+
+    // Startup FSM - Combinational Part
+    always_comb begin
+        startup_state_nxt = startup_state;
+        mixer_mode_nxt = mixer_mode;
+        throttle_out_nxt = throttle_out;
+        wait_counter_nxt = wait_counter;
+        ramp_step_counter_nxt = ramp_step_counter;
+
+        case (startup_state)
+            FSM_IDLE: begin
+                mixer_mode_nxt = MODE_INIT;
+                throttle_out_nxt = 0;
+                if (btnD_pulse) begin
+                    startup_state_nxt = FSM_WAIT;
+                    wait_counter_nxt = 0;
+                end
+            end
+            FSM_WAIT: begin
+                mixer_mode_nxt = MODE_ARMED;
+                throttle_out_nxt = 1000;
+                if (wait_counter == WAIT_TIME - 1) begin
+                    startup_state_nxt = FSM_RAMP;
+                    ramp_step_counter_nxt = 0;
+                end else begin
+                    wait_counter_nxt = wait_counter + 1;
+                end
+            end
+            FSM_RAMP: begin
+                mixer_mode_nxt = MODE_RUN;
+                if (throttle_out < 1500) begin
+                    if (ramp_step_counter == RAMP_STEP_TIME - 1) begin
+                        throttle_out_nxt = throttle_out + 1;
+                        ramp_step_counter_nxt = 0;
+                    end else begin
+                        ramp_step_counter_nxt = ramp_step_counter + 1;
+                    end
+                end else begin
+                    startup_state_nxt = FSM_RUN;
+                end
+            end
+            FSM_RUN: begin
+                mixer_mode_nxt = MODE_RUN;
+                throttle_out_nxt = 1500;
+            end
+        endcase
+    end
+
+    logic [14:0] m_width[4];
+    motor_mixer u_motor_mixer (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .mode(mixer_mode),
+        .throttle(throttle_out),
+        .pid_pitch(0), // Not implemented yet
+        .pid_roll(pid_output_debug),
+        .pid_yaw(0),   // Not implemented yet
+        .m1_width(m_width[0]),
+        .m2_width(m_width[1]),
+        .m3_width(m_width[2]),
+        .m4_width(m_width[3])
+    );
+
+    // Instantiate 4 PWM modules
+    genvar i;
+    generate
+        for (i = 0; i < 4; i = i + 1) begin : pwm_inst
+            pwm #( .MAX_TICK(MAX_TICK) ) u_pwm (
+                .clk(clk),
+                .enable(enable),
+                .d_in(m_width[i]),
+                .pwm(motor_pwm_out[i])
+            );
+        end
+    endgenerate
 
 
 // --- DEKLARACJE POMOCNICZE ---
@@ -212,6 +276,7 @@ logic [15:0] disp_hex;
 logic [2:0] page_cnt;       // Do przewijania 104-bitowych zmiennych
 logic       flag_6c_detect; // Zatrzask dla flagi odebrania '6c'
 
+logic [1:0] displayed_motor_idx; // 0:M1, 1:M2, 2:M3, 3:M4
 // Zmienna dla wygody - grupuje 3 przełączniki w jeden 3-bitowy wektor (zakres 0-7)
 logic [2:0] debug_menu_sel;
 assign debug_menu_sel = sw[14:12]; 
@@ -254,10 +319,10 @@ always_ff @(posedge clk) begin
             if (btnL_pulse) begin
                 displayed_motor_idx <= displayed_motor_idx + 1;
             end
-
+            
             // This mode uses sw[14:12] to select PID data to display
             case (debug_menu_sel) // sw[14:12]
-                3'b000: disp_hex <= pwm_motor[displayed_motor_idx]; // PWM value (1000-2000) for selected motor
+                3'b000: disp_hex <= m_width[displayed_motor_idx]; // PWM value (1000-2000) for selected motor
                 3'b001: disp_hex <= {3'b0, sw[7:5], 3'b0, sw[4:2], 2'b0, sw[1:0]}; // Show gains
                 3'b010: disp_hex <= pid_input_scaled; // PID input (scaled roll_deg)
                 3'b011: disp_hex <= pid_error_debug;  // PID error (Q8.7)
@@ -267,10 +332,10 @@ always_ff @(posedge clk) begin
                 3'b111: begin
                     // Calculate PWM percentage for the selected motor
                     logic [15:0] selected_pwm_percent;
-                    selected_pwm_percent = (pwm_motor[displayed_motor_idx] > 1000) ? ((pwm_motor[displayed_motor_idx] - 1000) / 10) : 0;
+                    selected_pwm_percent = (m_width[displayed_motor_idx] > 1000) ? ((m_width[displayed_motor_idx] - 1000) / 10) : 0;
                     disp_hex <= selected_pwm_percent;
                 end
-                default: disp_hex <= pwm_motor[displayed_motor_idx];
+                default: disp_hex <= m_width[displayed_motor_idx];
             endcase
             // Display value on hex display and motor index on LEDs 1:0
             led <= {disp_hex[15:2], displayed_motor_idx};

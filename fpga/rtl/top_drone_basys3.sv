@@ -17,9 +17,10 @@ module top_drone_basys3 (
     input  wire btnC,
     input  wire btnL,
     input  wire btnR,
+    input  wire btnD,
     input wire [15:0] sw,
     input wire btnU,
-    output wire JB10,
+    output wire [3:0] motor_pwm,
     output wire [7:1] JC, //ostatecznie lepiej zrezygnowac z tablicy JC i zrobic ladne nazwy w .xdc
     input wire JC_input,
     output wire [7:0] sseg,
@@ -150,6 +151,14 @@ module top_drone_basys3 (
          .db_level(),
          .db_tick(btnL_pulse)
       );
+      wire btnD_pulse;
+      debounce btnD_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnD),
+         .db_level(),
+         .db_tick(btnD_pulse)
+      );
       wire btnC_level;
       debounce btnC_db (
          .clk(pclk),
@@ -180,7 +189,7 @@ module top_drone_basys3 (
         .rst  (),
         .d_in (pwm_data),
         .enable(sw[0]),
-        .pwm(JB10),
+        .motor_pwm_out(motor_pwm),
         .copi(copi),
         .sclk(sclk),
         .poci(poci),
@@ -190,6 +199,7 @@ module top_drone_basys3 (
         .sseg,
         .led(led[15:0]),
         .button(btnU),
+        .btnD_pulse(btnD_pulse),
         .btnL_pulse(btnL_pulse),
         .btnR_pulse(btnR_pulse),
         .btnReset(btnC_level),
