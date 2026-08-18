@@ -60,26 +60,26 @@ module top_drone#(
         .pwm
      );
    
-     //logic [6:0] destination = 7'h0F;
-     //logic [7:0] data_write;
-     //logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
       (*KEEP = "true"*)
      logic [103:0] odczytwartosc;          // = {1'b1,destination,16'b0};
      wire spi_done;
-    // wire spi_loopback;
      (*KEEP = "true"*)
     logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
-        logic [6:0] data_length;
+
     logic signed [15:0] roll_raw;
     logic signed [15:0] roll_deg;
     logic signed [15:0] pitch_raw;
     logic signed [15:0] pitch_deg;
+
     logic signed [15:0] converted_Y;
     logic signed [15:0] converted_X;
+
     logic signed [15:0] converted_Z;
-        logic signed [15:0] angel; //👼
+        logic signed [15:0] angel; //👼 debug
+    
     logic [1:0] gyro_state;
 
+    // High precision signed Q15.24 angle data
     logic signed [39:0] rollq24;
     logic signed [39:0] pitchq24;
     logic signed [39:0] gyroXq24;
@@ -115,20 +115,7 @@ module top_drone#(
          .done(spi_done)
       );
 
-      convert_gyro #(
-        .WIDTH(16)
-        )
-         converter_Y (
-          .clk(clk),
-          .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[79:64]),
-          .data_latch(gyro_read_done),
-          .angle_deg(angel),
-          .angle_raw(),
-          .latched_raw(converted_Y),
-          .mul_result(gyroYq24)
-      );
-
+      
       convert_gyro #(
         .WIDTH(16)
         )
@@ -141,6 +128,20 @@ module top_drone#(
           .angle_raw(),
           .latched_raw(),
           .mul_result(gyroXq24)
+      );
+
+      convert_gyro #(
+        .WIDTH(16)
+        )
+         converter_Y (
+          .clk(clk),
+          .rst_n(~btnReset),
+          .gyro_raw_data(spi_odebrane[79:64]),
+          .data_latch(gyro_read_done),
+          .angle_deg(angel),
+          .angle_raw(),
+          .latched_raw(converted_Y),
+          .mul_result(gyroYq24)
       );
 
       convert_gyro #(
