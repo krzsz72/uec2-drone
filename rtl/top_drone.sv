@@ -138,15 +138,15 @@ module top_drone#(
 
     // --- Simple PWM Test Logic ---
     // Simplified test mode. sw[0] is the main enable switch.
-    // Switches sw[10:1] control the pulse width from 900us to 1600us.
+    // Switches sw[11:1] control the pulse width from 900us to 2000us.
     // This allows for manual control and verification of the ESCs and motors.
     logic [14:0] test_pulse_width;
-    logic [9:0] pulse_offset;
+    logic [10:0] pulse_offset;
 
-    assign pulse_offset = sw[10:1]; // Use switches 10 down to 1 for control (10 bits)
-    // Base pulse is 900us. Switches add 0-700us.
-    // The value from switches is clamped to 700 to stay within the 900-1600us range.
-    assign test_pulse_width = 15'd900 + (pulse_offset > 10'd700 ? 10'd700 : pulse_offset);
+    assign pulse_offset = sw[11:1]; // Use switches 11 down to 1 for control (11 bits)
+    // Base pulse is 900us. Switches add 0-1100us.
+    // The value from switches is clamped to 1100 to stay within the 900-2000us range.
+    assign test_pulse_width = 15'd900 + (pulse_offset > 11'd1100 ? 11'd1100 : pulse_offset);
 
     logic [14:0] m_width[4];
     assign m_width[0] = enable ? test_pulse_width : 15'd0;
