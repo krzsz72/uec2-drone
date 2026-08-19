@@ -185,13 +185,8 @@ module top_drone#(
     // --- Logika wyboru wzmocnień PID za pomocą przełączników ---
     // Kp, Ki, Kd są w formacie Q4.12
     always_comb begin
-        // Wybór Kp (0, 1, 2, 3) za pomocą sw[11:10]
         // Wybór Kp (1.0 do 2.0) za pomocą sw[11:10]
         case (sw[11:10])
-            2'b00: Kp_roll = 16'sd0;      // P = 0
-            2'b01: Kp_roll = 16'sd4096;   // P = 1.0   (1 * 2^12)
-            2'b10: Kp_roll = 16'sd8192;   // P = 2.0   (2 * 2^12)
-            2'b11: Kp_roll = 16'sd12288;  // P = 3.0   (3 * 2^12)
             2'b00: Kp_roll = 16'sd4096;   // P = 1.0
             2'b01: Kp_roll = 16'sd5325;   // P = ~1.3
             2'b10: Kp_roll = 16'sd6963;   // P = ~1.7
@@ -199,13 +194,8 @@ module top_drone#(
             default: Kp_roll = 16'sd0;
         endcase
 
-        // Wybór Ki (0.001 do 0.01) za pomocą sw[9:8]
         // Wybór Ki (0.0 do ~0.001) za pomocą sw[9:8]
         case (sw[9:8])
-            2'b00: Ki_roll = 16'sd4;      // I = ~0.001 (4 / 2^12)
-            2'b01: Ki_roll = 16'sd12;     // I = ~0.003 (12 / 2^12)
-            2'b10: Ki_roll = 16'sd29;     // I = ~0.007 (29 / 2^12)
-            2'b11: Ki_roll = 16'sd41;     // I = ~0.01  (41 / 2^12)
             2'b00: Ki_roll = 16'sd0;      // I = 0.0
             2'b01: Ki_roll = 16'sd1;      // I = ~0.00025
             2'b10: Ki_roll = 16'sd2;      // I = ~0.0005
@@ -213,13 +203,8 @@ module top_drone#(
             default: Ki_roll = 16'sd0;
         endcase
 
-        // Wybór Kd (0.05 do 0.2) za pomocą sw[7:6]
         // Wybór Kd (0.05 do 0.5) za pomocą sw[7:6]
         case (sw[7:6])
-            2'b00: Kd_roll = 16'sd205;    // D = ~0.05 (205 / 2^12)
-            2'b01: Kd_roll = 16'sd410;    // D = ~0.1  (410 / 2^12)
-            2'b10: Kd_roll = 16'sd614;    // D = ~0.15 (614 / 2^12)
-            2'b11: Kd_roll = 16'sd819;    // D = ~0.2  (819 / 2^12)
             2'b00: Kd_roll = 16'sd205;    // D = ~0.05
             2'b01: Kd_roll = 16'sd614;    // D = ~0.15
             2'b10: Kd_roll = 16'sd1229;   // D = ~0.3

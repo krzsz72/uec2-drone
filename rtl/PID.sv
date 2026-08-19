@@ -20,6 +20,12 @@ module PID #(
     logic signed [WIDTH-1:0] pid_derivative;
     logic signed [WIDTH-1:0] pid_last_error;
 
+    // Anti-windup: Integral clamping limits
+    // Limit the integral term's contribution to the final output to approx. +/- 250us
+    // Limit = (250 * 2^17) / Ki_max_approx = (250 * 131072) / 4 = 8192000
+    localparam signed [31:0] INTEGRAL_MAX = 32'sd8192000;
+    localparam signed [31:0] INTEGRAL_MIN = -32'sd8192000;
+
     // PID calculation logic
     always_ff @(posedge clk) begin
         if (!rst_n) begin // Reset PID
@@ -30,8 +36,17 @@ module PID #(
             if (enable) begin // Wykonuj obliczenia tylko gdy jest nowa próbka
                 pid_error <= pid_setpoint - estim_roll;
 
-                // TODO: Dodać logikę anti-windup. Na razie całka akumuluje się bez ograniczeń.
-                pid_integral <= pid_integral + pid_error;
+                // Integral calculation with anti-windup (clamping)
+                logic signed [31:0] integral_next;
+                integral_next = pid_integral + pid_error;
+                if (integral_next > INTEGRAL_MAX) begin
+                    pid_integral <= INTEGRAL_MAX;
+                end else if (integral_next < INTEGRAL_MIN) begin
+                    pid_integral <= INTEGRAL_MIN;
+                end else begin
+                    pid_integral <= integral_next;
+                end
+
                 pid_last_error <= pid_error;
             end
         end
