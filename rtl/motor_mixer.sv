@@ -40,11 +40,13 @@ module motor_mixer #(
     // M2 = Throttle - pid_pitch - pid_roll - pid_yaw
     assign m2_calc = throttle_signed - pid_pitch - pid_roll - pid_yaw;
     
-    // M3 = Throttle + pid_pitch + pid_roll - pid_yaw
-    assign m3_calc = throttle_signed + pid_pitch + pid_roll - pid_yaw;
+    // M3 (RR) = Throttle + pid_pitch - pid_roll + pid_yaw (poprawiony znak dla roll)
+    // Aby przechylić się w prawo (dodatni pid_roll), ten silnik musi zwolnić.
+    assign m3_calc = throttle_signed + pid_pitch - pid_roll + pid_yaw;
     
-    // M4 = Throttle + pid_pitch - pid_roll + pid_yaw
-    assign m4_calc = throttle_signed + pid_pitch - pid_roll + pid_yaw;
+    // M4 (RL) = Throttle + pid_pitch + pid_roll - pid_yaw (poprawiony znak dla roll)
+    // Aby przechylić się w prawo (dodatni pid_roll), ten silnik musi przyspieszyć.
+    assign m4_calc = throttle_signed + pid_pitch + pid_roll - pid_yaw;
 
     // Clamping function
     function [14:0] clamp;

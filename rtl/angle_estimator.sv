@@ -64,39 +64,33 @@ module angle_estimator #(
     output logic signed [WIDTH-1:0] angle_deg  //output for PID
    );
 
+   // Stała filtru komplementarnego, K = 1 / 2^ALPHA_SHIFT
+   // Mniejsza wartość to większe zaufanie do żyroskopu.
+   localparam int ALPHA_SHIFT = 8;
 
-   //uzywamy fixed point arithmetic Q8.7
-   logic signed [39:0] angle_deg_nxt;
-   logic signed [39:0] eval_error,eval_error_nxt   ;
-   logic signed [39:0] eval_gyro,eval_gyro_nxt    ;
+   logic signed [39:0] angle_full_reg, angle_full_next;
+   logic signed [39:0] angle_from_gyro;
 
-   // seq block
+   // Blok sekwencyjny - rejestr przechowujący stan filtru (estymowany kąt)
    always_ff @(posedge clk) begin
       if(!rst_n) begin
-         angle_deg <= '0;
-         eval_error     <='0;
-         eval_gyro      <='0;
+         angle_full_reg <= '0;
       end else begin
-         /*if(angle_deg_nxt[39] == 1'b0 && (|angle_deg_nxt[38:32]==1'b1)) begin
-            angle_deg <= 16'hFFFF;
-         end else if(angle_deg_nxt[39] == 1'b1 && (|angle_deg_nxt[38:32]==1'b1))begin
-            angle_deg <= 16'h8000;
-         end else begin*/
-            angle_deg      <= angle_deg_nxt[32:17];    //[20+(WIDTH/2)-1:20-(WIDTH/2)];
-        // end
-
-         eval_error     <= eval_error_nxt;
-         eval_gyro      <= eval_gyro_nxt;
+         angle_full_reg <= angle_full_next;
       end
    end
 
-   // fsm block
+   // Blok kombinacyjny - obliczenia filtru komplementarnego
    always_comb begin
-      
-      eval_gyro_nxt = eval_gyro + gyro_data;
-      eval_error_nxt = accel_data - eval_gyro;
-      angle_deg_nxt = eval_gyro + (eval_error >>> 8);
+      // Krok 1: Predykcja kąta na podstawie poprzedniej estymaty i nowego odczytu z żyroskopu
+      angle_from_gyro = angle_full_reg + gyro_data;
+      // Krok 2: Korekta predykcji na podstawie odczytu z akcelerometru
+      // angle_next = angle_from_gyro + K * (accel_angle - angle_from_gyro)
+      angle_full_next = angle_from_gyro + ((accel_data - angle_from_gyro) >>> ALPHA_SHIFT);
+   end
 
-     end
+   // Konwersja z formatu Q15.24 (używanego w obliczeniach) do Q8.7 (oczekiwanego przez PID)
+   // Wymaga przesunięcia w prawo o (24 - 7) = 17 bitów.
+   assign angle_deg = angle_full_next >>> 17;
 
 endmodule
