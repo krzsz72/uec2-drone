@@ -52,8 +52,9 @@ module PID #(
 
     // Sumowanie składowych i skalowanie do wartości całkowitej.
     // Część ułamkowa sumy ma 7 + 12 = 19 bitów.
-    // Przesuwamy o 19 bitów, aby uzyskać część całkowitą z wyniku mnożenia.
-    assign pid_output = (p_term + i_term + d_term) >>> (7 + 12);
+    // Przesuwamy o 17 bitów (zamiast 19), aby uzyskać część całkowitą
+    // i jednocześnie wzmocnić sygnał 4-krotnie (2^2 = 4).
+    assign pid_output = (p_term + i_term + d_term) >>> (19 - 2);
 
     // Wyjścia do debugowania
     assign pid_error_out = pid_error;
