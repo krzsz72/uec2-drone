@@ -46,18 +46,27 @@ module top_drone#(
     (* DONT_TOUCH = "true" *) logic [15:0] led_reg;
 
     // --- Sygnały dla PID i miksera silników ---
-    // Wzmocnienia PID
+    // Wzmocnienia PID z przełączników (tylko dla ROLL)
     logic signed [15:0] Kp_roll, Ki_roll, Kd_roll;
 
-    // Wyjścia z PID
+    // Wyjścia z regulatorów PID
     logic signed [15:0] pid_roll_out;
-    logic signed [15:0] pid_pitch_out = '0; // Na razie bez implementacji
-    logic signed [15:0] pid_yaw_out = '0;   // Na razie bez implementacji
+    logic signed [15:0] pid_pitch_out;
+    logic signed [15:0] pid_yaw_out;
 
-    // Sygnały do debugowania PID
+    // Sygnały do debugowania (ROLL)
     logic signed [15:0] pid_error_roll;
     logic signed [31:0] pid_integral_roll;
     logic signed [15:0] pid_derivative_roll;
+
+    // Estymowane kąty dla PID
+    logic signed [15:0] estim_roll;
+    logic signed [15:0] estim_pitch;
+
+    // Sygnały danych z IMU w formacie Q15.24
+    logic signed [39:0] accel_roll_q24, gyro_roll_q24;
+    logic signed [39:0] accel_pitch_q24, gyro_pitch_q24;
+    logic signed [39:0] gyro_yaw_rate_q24;
 
     // Sygnały dla miksera
     logic [1:0]  drone_mode;
@@ -86,17 +95,11 @@ module top_drone#(
      (*KEEP = "true"*)
     logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
     logic [6:0] data_length;
-    logic signed [15:0] roll_raw;
-    logic signed [15:0] roll_deg;
-    logic signed [15:0] converted_Y;
-    logic signed [15:0] angel; //👼
     (* KEEP = "true" *) logic [1:0] gyro_state;
-
-    logic signed [39:0] rollq24;
-    logic signed [39:0] gyroYq24;
 
     logic gyro_read_done;
     assign gyro_read_done = ((gyro_state==2'b10) & spi_done); 
+
     gyro #( )
      gyro (
         .clk(clk),
@@ -123,41 +126,82 @@ module top_drone#(
          .done(spi_done)
       );
 
-      convert_gyro #(
-        .WIDTH(16)
-        )
-         converter_Y (
-          .clk(clk),
-          .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[79:64]),
-          .data_latch(gyro_read_done),
-          .angle_deg(angel),
-          .angle_raw(),
-          .latched_raw(converted_Y),
-          .mul_result(gyroYq24)
-      );
+    // --- Konwersja danych z IMU ---
+    // Dane z SPI są mapowane na odpowiednie osie i konwertowane do formatu Q15.24
+    // UWAGA: Poprawiono błędne mapowanie danych!
 
-      convert_accel #(.WIDTH(16) )
-       accel_roll (
+    // Oś ROLL (Gyro Y, Accel X)
+    convert_gyro #(.WIDTH(16)) conv_gyro_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[31:16]),
+        .gyro_raw_data(spi_odebrane[31:16]), // GYRO_Y
         .data_latch(gyro_read_done),
-        .angle_deg(roll_deg),
-        .angle_raw(),
-        .latched_raw(roll_raw),
-        .mul_result(rollq24)
-      );
+        .mul_result(gyro_roll_q24)
+    );
+    convert_accel #(.WIDTH(16)) conv_accel_roll (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_raw_data(spi_odebrane[63:48]), // ACCEL_X
+        .data_latch(gyro_read_done),
+        .mul_result(accel_roll_q24)
+    );
 
-  
-    logic signed [15:0] estim_roll;
+    // Oś PITCH (Gyro X, Accel Y)
+    convert_gyro #(.WIDTH(16)) conv_gyro_pitch (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .gyro_raw_data(spi_odebrane[15:0]), // GYRO_X
+        .data_latch(gyro_read_done),
+        .mul_result(gyro_pitch_q24)
+    );
+    convert_accel #(.WIDTH(16)) conv_accel_pitch (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_raw_data(spi_odebrane[79:64]), // ACCEL_Y
+        .data_latch(gyro_read_done),
+        .mul_result(accel_pitch_q24)
+    );
+
+    // Oś YAW (Gyro Z)
+    convert_gyro #(.WIDTH(16)) conv_gyro_yaw (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .gyro_raw_data(spi_odebrane[47:32]), // GYRO_Z
+        .data_latch(gyro_read_done),
+        .mul_result(gyro_yaw_rate_q24)
+    );
+
+    // --- Estymacja kątów (Filtr komplementarny) ---
     angle_estimator #() estimator_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_data(rollq24),
-        .gyro_data(gyroYq24),
+        .accel_data(accel_roll_q24),
+        .gyro_data(gyro_roll_q24),
         .angle_deg(estim_roll)
     );
+
+    angle_estimator #() estimator_pitch (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .accel_data(accel_pitch_q24),
+        .gyro_data(gyro_pitch_q24),
+        .angle_deg(estim_pitch)
+    );
+
+    // --- Stałe wzmocnienia dla PITCH i YAW ---
+    // Wzmocnienia dla PITCH (takie same jak domyślne dla ROLL)
+    localparam signed [15:0] Kp_pitch = 16'sd4096; // P = 1.0
+    localparam signed [15:0] Ki_pitch = 16'sd0;     // I = 0.0
+    localparam signed [15:0] Kd_pitch = 16'sd205;   // D = ~0.05
+
+    // Wzmocnienia dla YAW (bardzo delikatne, tryb "rate")
+    localparam signed [15:0] Kp_yaw = 16'sd1024;  // P = 0.25
+    localparam signed [15:0] Ki_yaw = 16'sd0;     // I = 0.0
+    localparam signed [15:0] Kd_yaw = 16'sd0;     // D = 0.0
+
+    // Wejście dla regulatora YAW (przeskalowana prędkość kątowa)
+    logic signed [15:0] yaw_rate_for_pid;
+    assign yaw_rate_for_pid = gyro_yaw_rate_q24 >>> 17;
 
     // --- Logika trybu testowego silników ---
     // Aktywowany przez menu debugowania (sw[14:12] = 111)
@@ -213,7 +257,7 @@ module top_drone#(
         endcase
     end
 
-    // --- Instancja PID dla osi roll ---
+    // --- Instancje regulatorów PID ---
     PID #(.WIDTH(16)) pid_roll_inst (
         .clk(clk),
         .rst_n(~btnReset),
@@ -226,6 +270,29 @@ module top_drone#(
         .pid_error_out(pid_error_roll),
         .pid_integral_out(pid_integral_roll),
         .pid_derivative_out(pid_derivative_roll)
+    );
+
+    PID #(.WIDTH(16)) pid_pitch_inst (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .enable(gyro_read_done),
+        .estim_roll(estim_pitch), // Wejście to kąt PITCH
+        .Kp(Kp_pitch),
+        .Ki(Ki_pitch),
+        .Kd(Kd_pitch),
+        .pid_output(pid_pitch_out)
+        // Wyjścia debugujące niepodłączone
+    );
+
+    PID #(.WIDTH(16)) pid_yaw_inst (
+        .clk(clk),
+        .rst_n(~btnReset),
+        .enable(gyro_read_done),
+        .estim_roll(yaw_rate_for_pid), // Wejście to PRĘDKOŚĆ KĄTOWA YAW
+        .Kp(Kp_yaw),
+        .Ki(Ki_yaw),
+        .Kd(Kd_yaw),
+        .pid_output(pid_yaw_out)
     );
 
     // --- Tryb drona i przepustnica ---
@@ -266,24 +333,14 @@ logic       flag_6c_detect; // Zatrzask dla flagi odebrania '6c'
 
 // *******D E B U G**************D E B U G**************D E B U G*******
 // sw[14:12] wybór wartości do wyświetlenia:
-// 000: Wyjście PID roll (korekcja)
-// 001: Kp_roll (część całkowita)
-// 010: Kąt roll (estim_roll)
-// 011: Błąd PID (pid_error_roll)
-// 100: Całka PID (dolne 16 bitów)
-// 101: Całka PID (górne 16 bitów)
-// 110: Różniczka PID (pid_derivative_roll)
+// 000: Kąt Roll (estim_roll)
+// 001: Kąt Pitch (estim_pitch)
+// 010: Korekcja PID Roll (pid_roll_out)
+// 011: Korekcja PID Pitch (pid_pitch_out)
+// 100: Korekcja PID Yaw (pid_yaw_out)
+// 101: Błąd PID Roll (pid_error_roll)
+// 110: Całka PID Roll (dolne 16 bitów)
 // 111: TRYB TESTOWY - szerokość impulsu dla silnika M1
-//
-// *******D E B U G**************D E B U G**************D E B U G*******
-// sw15 - tryb ciagly gyro, sw14,sw13,sw12:
-// 001 : odczytwartosc - nadawanawartosc
-// 010 : spi_odebrane - odebrane dane
-// 011 : convertedY - 
-// 100 : status: converted_Y_H , 00000, led2 - spi_odebrane[1], led1 - ?converted_Y led0 - ?6c
-// 101 : angel - Y angle deegrees per second
-// 110 : estimated_angle_roll
-// 111 : roll_deg
 // *******D E B U G**************D E B U G**************D E B U G*******
 
 
@@ -297,13 +354,13 @@ always_ff @(posedge clk) begin
     end 
     else begin
         case(sw[14:12])
-            3'b000: disp_hex <= pid_roll_out;
-            3'b001: disp_hex <= Kp_roll[15:12]; // Wyświetl tylko część całkowitą
-            3'b010: disp_hex <= estim_roll;
-            3'b011: disp_hex <= pid_error_roll;
-            3'b100: disp_hex <= pid_integral_roll[15:0];
-            3'b101: disp_hex <= pid_integral_roll[31:16];
-            3'b110: disp_hex <= pid_derivative_roll;
+            3'b000: disp_hex <= estim_roll;
+            3'b001: disp_hex <= estim_pitch;
+            3'b010: disp_hex <= pid_roll_out;
+            3'b011: disp_hex <= pid_pitch_out;
+            3'b100: disp_hex <= pid_yaw_out;
+            3'b101: disp_hex <= pid_error_roll;
+            3'b110: disp_hex <= pid_integral_roll[15:0];
             3'b111: disp_hex <= m1_width; // W trybie testowym, pokaż szerokość impulsu M1
             default: disp_hex <= 16'hDEAD;
         endcase
