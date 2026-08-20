@@ -1,16 +1,12 @@
-/**
- * San Jose State University
- * EE178 Lab #4
- * Author: prof. Eric Crabilla
- *
- * Modified by:
- * 2025  AGH University of Science and Technology
- * MTM UEC2
- * Piotr Kaczmarczyk
- *
- * Description:
- * Top level synthesizable module including the project top and all the FPGA-referred modules.
- */
+//******************************************************************************
+//       ______________________________________________
+//      |                                              |
+//      | top module                                   |
+//      |______________________________________________|
+//
+// Author: Krzysztof Piziak, Szymon Rybak
+//******************************************************************************
+
 
 module top_drone_basys3 (
     input  wire clk,
@@ -134,6 +130,7 @@ module top_drone_basys3 (
          .db_tick(btnU_tick)
       );
 
+      wire logic btnR_pulse;
       debounce btnR_db (
          .clk(pclk),
          .reset(1'b0),

@@ -1,16 +1,12 @@
-/**
- * San Jose State University
- * EE178 Lab #4
- * Author: prof. Eric Crabilla
- *
- * Modified by:
- * 2025  AGH University of Science and Technology
- * MTM UEC2
- * Piotr Kaczmarczyk
- *
- * Description:
- * The project top module.
- */
+//******************************************************************************
+//       ______________________________________________
+//      |                                              |
+//      | drone top module                             |
+//      |______________________________________________|
+//
+// Author: Krzysztof Piziak, Szymon Rybak
+//******************************************************************************
+
 
 module top_drone#(
     parameter MAX_TICK = 14'd9999
@@ -39,18 +35,6 @@ module top_drone#(
     timeunit 1ns;
     timeprecision 1ps;
 
-    /**
-     * Local variables and signals
-     */
-
-    /**
-     * Signals assignments
-     */
-
-    /**
-     * Submodules instances
-     */
-
      pwm #(
         .MAX_TICK(MAX_TICK)
      ) u_pwm50Hz(
@@ -61,10 +45,11 @@ module top_drone#(
      );
    
       (*KEEP = "true"*)
-     logic [103:0] odczytwartosc;          // = {1'b1,destination,16'b0};
+     logic [103:0] spi_transmit;
      wire spi_done;
      (*KEEP = "true"*)
-    logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
+    logic [103:0] spi_received; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
+    logic [6:0] data_length;
 
     logic signed [15:0] roll_raw;
     logic signed [15:0] roll_deg;
@@ -93,9 +78,9 @@ module top_drone#(
         .clk(clk),
         .rst_n(~btnReset),
         .d_length(data_length),
-        .d_out(odczytwartosc),
+        .d_out(spi_transmit),
         .ready( (spi_done && sw[15]) | spi_start),
-        .gyro_data( (&spi_odebrane[1:0]) ),
+        .gyro_data( (&spi_received[1:0]) ),
         .state_curr(gyro_state),
         .state_prev()
     );
@@ -107,8 +92,8 @@ module top_drone#(
          .d_length(data_length),
          .sclk(sclk),
          .cs_n(cs_n),
-         .reg_rx(spi_odebrane),
-         .reg_tx(odczytwartosc),
+         .reg_rx(spi_received),
+         .reg_tx(spi_transmit),
          .poci(poci),
          .copi(copi),
          .busy(),
@@ -122,7 +107,7 @@ module top_drone#(
          converter_X (
           .clk(clk),
           .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[95:80]),
+          .gyro_raw_data(spi_received[95:80]),
           .data_latch(gyro_read_done),
           .angle_deg(converted_X),
           .angle_raw(),
@@ -136,7 +121,7 @@ module top_drone#(
          converter_Y (
           .clk(clk),
           .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[79:64]),
+          .gyro_raw_data(spi_received[79:64]),
           .data_latch(gyro_read_done),
           .angle_deg(angel),
           .angle_raw(),
@@ -150,7 +135,7 @@ module top_drone#(
          converter_Z (
           .clk(clk),
           .rst_n(~btnReset),
-          .gyro_raw_data(spi_odebrane[63:48]),
+          .gyro_raw_data(spi_received[63:48]),
           .data_latch(gyro_read_done),
           .angle_deg(),
           .angle_raw(),
@@ -163,7 +148,7 @@ module top_drone#(
        accel_pitch (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[31:16]),
+        .accel_raw_data(spi_received[31:16]),
         .data_latch(gyro_read_done),
         .angle_deg(pitch_deg),
         .angle_raw(),
@@ -175,7 +160,7 @@ module top_drone#(
        accel_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[47:32]),
+        .accel_raw_data(spi_received[47:32]),
         .data_latch(gyro_read_done),
         .angle_deg(roll_deg),
         .angle_raw(),
@@ -214,10 +199,10 @@ assign debug_menu_sel = sw[14:12];
 
 // *******D E B U G**************D E B U G**************D E B U G*******
 // sw15 - tryb ciagly gyro, sw14,sw13,sw12:
-// 001 : odczytwartosc - nadawanawartosc
-// 010 : spi_odebrane - odebrane dane
+// 001 : spi_transmit - nadawanawartosc
+// 010 : spi_received - odebrane dane
 // 011 : convertedY, convertedX, convertedZ
-// 100 : status: converted_Y_H , 00000, led2 - spi_odebrane[1], led1 - ?converted_Y led0 - ?6c
+// 100 : status: converted_Y_H , 00000, led2 - spi_received[1], led1 - ?converted_Y led0 - ?6c
 // 101 : angel - Y angle deegrees per second
 // 110 : estimated_angle_roll, estimated_angle_pitch
 // 111 : roll_deg, pitch_deg, yaw_deg
@@ -239,7 +224,7 @@ always_ff @(posedge clk) begin
         end
 
         // 2. ZATRZASKIWANIE ZDARZEŃ
-        if (spi_done == 1'b1 && spi_odebrane[7:0] == 8'h6c) begin // 95:80?
+        if (spi_done == 1'b1 && spi_received[7:0] == 8'h6c) begin // 95:80?
             flag_6c_detect <= 1'b1; 
         end
 
@@ -252,25 +237,25 @@ always_ff @(posedge clk) begin
             
             3'b001: begin // sw[14]=0, sw[13]=0, sw[12]=1 -> ODCZYTWARTOSC (104 bit)
                 case (page_cnt)
-                    3'd0: begin led <= odczytwartosc[95:80];           disp_hex <= odczytwartosc[95:80];          end
-                    3'd1: begin led <= odczytwartosc[79:64];           disp_hex <= odczytwartosc[79:64];          end
-                    3'd2: begin led <= odczytwartosc[63:48];           disp_hex <= odczytwartosc[63:48];          end
-                    3'd3: begin led <= odczytwartosc[47:32];           disp_hex <= odczytwartosc[47:32];          end
-                    3'd4: begin led <= odczytwartosc[31:16];           disp_hex <= odczytwartosc[31:16];          end
-                    3'd5: begin led <= odczytwartosc[15:0];            disp_hex <= odczytwartosc[15:0];           end
-                    3'd6: begin led <= {8'b0, odczytwartosc[103:96]};  disp_hex <= {8'b0, odczytwartosc[103:96]}; end
+                    3'd0: begin led <= spi_transmit[95:80];           disp_hex <= spi_transmit[95:80];          end
+                    3'd1: begin led <= spi_transmit[79:64];           disp_hex <= spi_transmit[79:64];          end
+                    3'd2: begin led <= spi_transmit[63:48];           disp_hex <= spi_transmit[63:48];          end
+                    3'd3: begin led <= spi_transmit[47:32];           disp_hex <= spi_transmit[47:32];          end
+                    3'd4: begin led <= spi_transmit[31:16];           disp_hex <= spi_transmit[31:16];          end
+                    3'd5: begin led <= spi_transmit[15:0];            disp_hex <= spi_transmit[15:0];           end
+                    3'd6: begin led <= {8'b0, spi_transmit[103:96]};  disp_hex <= {8'b0, spi_transmit[103:96]}; end
                 endcase
             end
 
             3'b010: begin // sw[14]=0, sw[13]=1, sw[12]=0 -> SPI_ODEBRANE (56 bit)
                 case (page_cnt)
-                    3'd0: begin led <= spi_odebrane[95:80];           disp_hex <= spi_odebrane[95:80];          end // gyro X
-                    3'd1: begin led <= spi_odebrane[79:64];           disp_hex <= spi_odebrane[79:64];          end // gyro Y
-                    3'd2: begin led <= spi_odebrane[63:48];           disp_hex <= spi_odebrane[63:48];          end // gyro Z
-                    3'd3: begin led <= spi_odebrane[47:32];           disp_hex <= spi_odebrane[47:32];          end // xl X
-                    3'd4: begin led <= spi_odebrane[31:16];           disp_hex <= spi_odebrane[31:16];          end // xl Y
-                    3'd5: begin led <= spi_odebrane[15:0];            disp_hex <= spi_odebrane[15:0];           end // xl Z
-                    3'd6: begin led <= {8'b0, spi_odebrane[103:96]};  disp_hex <= {8'b0, spi_odebrane[103:96]}; end
+                    3'd0: begin led <= spi_received[95:80];           disp_hex <= spi_received[95:80];          end // gyro X
+                    3'd1: begin led <= spi_received[79:64];           disp_hex <= spi_received[79:64];          end // gyro Y
+                    3'd2: begin led <= spi_received[63:48];           disp_hex <= spi_received[63:48];          end // gyro Z
+                    3'd3: begin led <= spi_received[47:32];           disp_hex <= spi_received[47:32];          end // xl X
+                    3'd4: begin led <= spi_received[31:16];           disp_hex <= spi_received[31:16];          end // xl Y
+                    3'd5: begin led <= spi_received[15:0];            disp_hex <= spi_received[15:0];           end // xl Z
+                    3'd6: begin led <= {8'b0, spi_received[103:96]};  disp_hex <= {8'b0, spi_received[103:96]}; end
                 endcase
             end
 
@@ -283,8 +268,8 @@ always_ff @(posedge clk) begin
             end
 
             3'b100: begin // sw[14]=1, sw[13]=0, sw[12]=0 -> FLAGI STATUSU
-                led      <= {converted_Y[15:8], 5'b00000, spi_odebrane[1], (|converted_Y), flag_6c_detect};
-                disp_hex <= {converted_Y[15:8], 5'b00000, spi_odebrane[1], (|converted_Y), flag_6c_detect};
+                led      <= {converted_Y[15:8], 5'b00000, spi_received[1], (|converted_Y), flag_6c_detect};
+                disp_hex <= {converted_Y[15:8], 5'b00000, spi_received[1], (|converted_Y), flag_6c_detect};
             end
             
             3'b101: begin // sw[14]=1, sw[13]=0, sw[12]=1 -> kat Y

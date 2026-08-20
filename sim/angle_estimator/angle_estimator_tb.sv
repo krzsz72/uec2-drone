@@ -16,9 +16,7 @@ module angle_estimator_tb;
 
     logic data_latch;
     logic signed [WIDTH-1:0] angle_deg; //Q8.8
-    logic signed [39:0] val_xl;
-    logic signed [39:0] val_gyro;
-
+   
     // Zmienne fizyczne dla wygody (tylko do symulacji!)
     real current_angle_deg = 0.0;
     real rotation_speed_dps = 600.0;

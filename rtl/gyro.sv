@@ -1,57 +1,11 @@
 //******************************************************************************
 //       ______________________________________________
 //      |                                              |
-//      | gyroscope driver   (WIP)                     |
-//      |______________________________________________|
-//      |                                              |
-//      |    Parameters and defaults                   |
-//      |        WIDTH  = 32  bits                     | 
-//      |                                              |
-//      |                 WIP                          |
-//      |                                              |
-//  ----| ready                                   sclk |----
-//  ==8=| reg_tx                                reg_rx |=8==
-//  ----| poci                                    copi |----
-//      |                                         done |----
-//  ----| clk                                     busy |----
-//      |                                         cs_n |----
+//      | gyro fsm                                     |
 //      |______________________________________________|
 //
-//** Description ***************************************************************
-//
-//  An SPI interface controller with inout registers and serial communication copi poci wires.
-//
-//** Sample Instantiation ******************************************************
-//
-//    spi_controller #(
-//        .WIDTH(16)
-//    )
-//    spi_controller(
-//        .clk(clk),
-//        .ready(ready),
-//        .sclk(sclk),
-//        .cs_n(cs_n),
-//        .reg_rx(reg_rx),
-//        .reg_tx(reg_tx),
-//        .poci(poci),
-//        .copi(copi),
-//        .busy(busy),
-//        .done(done)
-//    );
-//
-//** Signals: ************************************************************
-//
-//  1) clk: High speed system clock (typically 100 MHz)
-//
-//  2) ready: Activates the full-duplex transmission when logic high.
-//
-//  3) sclk: SPI transmission clock. Due to posedge clk logic it is half of clk. 
-//
-//  4) reg_rx/reg_tx : internal register holding the transceived data.
-//
-//  5) poci/copi : wires for serial transmission. Containt single bit informaation 
-//                 that is being currently transceived
-//
+// Author: Krzysztof Piziak
+//******************************************************************************
 
 
 module gyro #(
@@ -59,7 +13,7 @@ module gyro #(
    parameter logic [BYTEWIDTH-1:0] WIDTH=104 //inout registers width
    )
    (
-    input logic clk, ready, rst_n, gyro_data, //start de facto ready - done od spi   gyro_data sprawdzana gotowosc danych na zewn i tutaj tylko flaga wysylana zeby nastepna ramke wyslalo
+    input logic clk, ready, rst_n, gyro_data,
     output logic [WIDTH-1:0] d_out,
     output logic [BYTEWIDTH-1:0] d_length,
     output logic [1:0] state_curr, state_prev
@@ -107,11 +61,10 @@ module gyro #(
       
       case(state)
          STARTUP: begin
-          //  if (armed) state_nxt = GYRO_POLLING;
             if(ready) begin
                case(init_cntr)    //wypisz rejestry po kolei
                'd0: begin
-                   data_out={READBIT,7'h0F,96'b0}; //WHOAMI ... dokoncyzc: pomysl z wysyaniem podniesienia CS_N w ramce od gyro? !
+                   data_out={READBIT,7'h0F,96'b0}; //WHOAMI
                    data_length='d16;
                   end
                'd1: begin
@@ -146,14 +99,14 @@ module gyro #(
          end
       end
          GYRO_POLLING: begin //polling czy dane sa gotowe
-            data_out={READBIT,7'h1e,96'b0}; // status_reg 1Eh - 00000-TDA-GDA-XLDA    --- to idzie do spi_odebrane. jezeli bit[1] bedzie 1 to dane sa gotowe
+            data_out={READBIT,7'h1e,96'b0}; // status_reg 1Eh - 00000-TDA-GDA-XLDA
             data_length='d16;  
             if(gyro_data && ready) state_nxt = READ;
          end
          
-         READ: begin //wysyla ramke o dlugosci 3 bajtow by sczytac xyz rejestry.  PAMIETAJ O ZEROWANIU spi_odebrane PO KAZDYM ODCZYCIE
+         READ: begin 
             data_out={READBIT,7'h22,96'b0}; // OUTX_L_G 22h - OUTX_L_G register D7 D6 D5 D4 D3 D2 D1 D0 \ D15 D14 D13 D12 D11 D10 D9 D8
-            data_length='d104; //1bajt na adres + 6 bajtow na XL XH; YL YH; ZL ZH  
+            data_length='d104;
             if(ready) state_nxt = GYRO_POLLING;
          end
          default: state_nxt = STARTUP;
