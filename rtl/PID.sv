@@ -26,15 +26,24 @@ module PID #(
     // Limit = (250 * 2^17) / Ki_max_approx = (250 * 131072) / 4 = 8192000
     localparam signed [31:0] INTEGRAL_MAX = 32'sd8192000;
     localparam signed [31:0] INTEGRAL_MIN = -32'sd8192000;
-
+    logic signed [47:0] p_term, i_term, d_term;
+    
     // PID calculation logic
     always_ff @(posedge clk) begin
         logic signed [31:0] integral_next; // Deklaracja przeniesiona na początek bloku
         if (!rst_n) begin // Reset PID
             pid_integral <= '0;
+            integral_next = '0;
             pid_last_error <= '0;
             pid_error <= '0;
-            calc_prescale <= 4'b0;
+            calc_prescale <= '0;
+            p_term              <= '0;
+            i_term              <= '0;
+            d_term              <= '0;
+            pid_output          <= '0;
+            pid_error_out       <= '0;
+            pid_integral_out    <= '0;
+            pid_derivative_out  <= '0;
 
         end else begin
             if (enable) begin // Wykonuj obliczenia tylko gdy jest nowa próbka
@@ -54,6 +63,38 @@ module PID #(
 
                 pid_last_error <= pid_error;
             end
+
+            case (calc_prescale)
+            4'd0    : begin
+               
+            end
+            4'd1    : begin
+                p_term <= pid_error * Kp;
+                calc_prescale <= calc_prescale + 1;
+            end
+             4'd2    : begin
+                 i_term <= pid_integral * Ki;
+                 calc_prescale <= calc_prescale + 1;
+            end
+             4'd3    : begin
+                 d_term <= pid_derivative * Kd;
+                 calc_prescale <= calc_prescale + 1;
+            end
+             4'd4    : begin        //nie potrzeba flagi gotowosci PID poniewaz output przypisywany jest dopiero tutaj
+                pid_output <= (p_term + i_term + d_term) >>> (19 - 2);
+            end
+             4'd5    : begin 
+                pid_error_out <= pid_error;
+                pid_integral_out <= pid_integral;
+                pid_derivative_out <= pid_derivative;
+                calc_prescale <= calc_prescale + 1;
+            end
+
+            default 	:
+                calc_prescale <= 4'b0;
+             
+        endcase
+
         end
     end
 
@@ -65,39 +106,7 @@ module PID #(
     // Wzmocnienia Kp, Ki, Kd są w formacie Q4.12
     // p_term, d_term: Q8.7 * Q4.12 -> Q12.19
     // i_term: Q24.7 * Q4.12 -> Q28.19
-    logic signed [47:0] p_term, i_term, d_term;
-    always @(posedge clk) begin
-        case (calc_prescale)
-            4'd0    : begin
-               
-            end
-            4'd1    : begin
-                p_term = pid_error * Kp;
-                calc_prescale = calc_prescale + 1;
-            end
-             4'd2    : begin
-                 i_term = pid_integral * Ki;
-                 calc_prescale = calc_prescale + 1;
-            end
-             4'd3    : begin
-                 d_term = pid_derivative * Kd;
-                 calc_prescale = calc_prescale + 1;
-            end
-             4'd4    : begin
-                assign pid_output = (p_term + i_term + d_term) >>> (19 - 2);
-            end
-             4'd5    : begin
-                assign pid_error_out = pid_error;
-                assign pid_integral_out = pid_integral;
-                assign pid_derivative_out = pid_derivative;
-                calc_prescale = calc_prescale + 1;
-            end
-
-            default 	:
-                calc_prescale = 4'b0;
-             
-        endcase
-    end
+   
     
         
         
