@@ -91,7 +91,6 @@ module top_drone#(
       (*KEEP = "true"*)
      logic [103:0] odczytwartosc;          // = {1'b1,destination,16'b0};
      wire spi_done;
-    // wire spi_loopback;
      (*KEEP = "true"*)
     logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
     logic [6:0] data_length;
@@ -108,7 +107,8 @@ module top_drone#(
         .d_out(odczytwartosc),
         .ready( (spi_done && sw[15]) | spi_start),
         .gyro_data( (&spi_odebrane[1:0]) ),
-        .state_curr(gyro_state)
+        .state_curr(gyro_state),
+        .state_prev()
     );
 
      spi_controller #( )
@@ -375,7 +375,7 @@ end
         .hex2(disp_hex[11:8]), 
         .hex1(disp_hex[7:4]), 
         .hex0(disp_hex[3:0]), 
-        .dp_in(4'b1111),       // Wygaszone kropki
+        .dp_in({1'b1,page_cnt}),       // kropki jako page_cntr
         .an(an),
         .sseg(sseg)
     );

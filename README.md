@@ -5,6 +5,9 @@ export PATH=${VIVADO_DIR}/bin:${PATH} ;
 . env.sh
 ```
 
+zapytac sie:
+ - czy wyjscie high-z?
+
 **Wszystkie komendy należy wywoływać z głównego folderu projektu**.\
 _Każdy plik w projekcie posiada nagłówek z krótkim opisem jego funkcji._
 

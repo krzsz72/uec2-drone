@@ -1,6 +1,6 @@
 // ********************************
 //
-//     TESTBENCH for unit_converter
+//     TESTBENCH for convert_gyro
 //
 //     Krzysztof Piziak
 //
