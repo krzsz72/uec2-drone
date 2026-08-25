@@ -1,3 +1,13 @@
+set sv_files {
+    ../rtl/spi_controller.sv
+    ../rtl/gyro.sv
+    ../rtl/convert_gyro.sv
+    ../rtl/convert_accel.sv
+    ../rtl/angle_estimator.sv
+    ../rtl/PID.sv              # <--- UPEWNIJ SIĘ, ŻE TA LINIA JEST DODANA
+    ../rtl/top_drone.sv
+    rtl/top_drone_basys3.sv
+}
 # Copyright (C) 2025  AGH University of Science and Technology
 # MTM UEC2
 # Author: Piotr Kaczmarczyk
@@ -37,6 +47,8 @@ set sv_files {
     ../rtl/convert_accel.sv
     ../rtl/angle_estimator.sv
     ../rtl/top_drone.sv
+    ../rtl/PID.sv 
+    ../rtl/motor_mixer.sv 
     rtl/top_drone_basys3.sv
 }
 

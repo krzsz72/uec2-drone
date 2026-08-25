@@ -31,14 +31,7 @@ module angle_estimator #(
          eval_error     <='0;
          eval_gyro      <='0;
       end else begin
-         /*if(angle_deg_nxt[39] == 1'b0 && (|angle_deg_nxt[38:32]==1'b1)) begin
-            angle_deg <= 16'hFFFF;
-         end else if(angle_deg_nxt[39] == 1'b1 && (|angle_deg_nxt[38:32]==1'b1))begin
-            angle_deg <= 16'h8000;
-         end else begin*/
-            angle_deg      <= angle_deg_nxt[32:17];    //[20+(WIDTH/2)-1:20-(WIDTH/2)];
-        // end
-
+         angle_deg      <= angle_deg_nxt[32:17];    //[20+(WIDTH/2)-1:20-(WIDTH/2)];
          eval_error     <= eval_error_nxt;
          eval_gyro      <= eval_gyro_nxt;
       end
@@ -47,10 +40,10 @@ module angle_estimator #(
    // fsm block
    always_comb begin
       
-      eval_gyro_nxt = angle_deg + gyro_data;
+      eval_gyro_nxt = eval_gyro + gyro_data;
       eval_error_nxt = accel_data - eval_gyro;
       angle_deg_nxt = eval_gyro + (eval_error >>> 8);
 
-     end
+   end
 
 endmodule

@@ -56,7 +56,7 @@ module convert_gyro #(
       end else begin
          mul_result_nxt = angle_raw * GYRO_COEF;
          latched_raw_nxt = angle_raw ; // debug
-         angle_deg_nxt = mul_result_nxt[31:16] ; //obceity debug
+         angle_deg_nxt = mul_result_nxt[39:24] ; //obceity debug, bierzemy czesc calkowita
       end
      end
 

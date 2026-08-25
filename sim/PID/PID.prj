@@ -1,0 +1,2 @@
+sv work    ../../rtl/PID.sv \
+                PID_tb.sv

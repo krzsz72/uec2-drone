@@ -152,18 +152,18 @@ set_property IOSTANDARD LVCMOS33 [get_ports btnD]
 
 
 ##Pmod Header JB
-##Sch name = JB1
-#set_property PACKAGE_PIN A14 [get_ports {JB[0]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[0]}]
-##Sch name = JB2
-#set_property PACKAGE_PIN A16 [get_ports {JB[1]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[1]}]
-##Sch name = JB3
-#set_property PACKAGE_PIN B15 [get_ports {JB[2]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[2]}]
-##Sch name = JB4
-#set_property PACKAGE_PIN B16 [get_ports {JB[3]}]
-#set_property IOSTANDARD LVCMOS33 [get_ports {JB[3]}]
+#Sch name = JB1
+set_property PACKAGE_PIN A14 [get_ports {motor_pwm[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {motor_pwm[0]}]
+#Sch name = JB2
+set_property PACKAGE_PIN A16 [get_ports {motor_pwm[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {motor_pwm[1]}]
+#Sch name = JB3
+set_property PACKAGE_PIN B15 [get_ports {motor_pwm[2]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {motor_pwm[2]}]
+#Sch name = JB4
+set_property PACKAGE_PIN B16 [get_ports {motor_pwm[3]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {motor_pwm[3]}]
 ##Sch name = JB7
 #set_property PACKAGE_PIN A15 [get_ports {JB[4]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {JB[4]}]
@@ -173,9 +173,6 @@ set_property IOSTANDARD LVCMOS33 [get_ports btnD]
 ##Sch name = JB9
 #set_property PACKAGE_PIN C15 [get_ports {JB[6]}]
 #set_property IOSTANDARD LVCMOS33 [get_ports {JB[6]}]
-##Sch name = JB10
-set_property PACKAGE_PIN C16 [get_ports JB10]
-set_property IOSTANDARD LVCMOS33 [get_ports JB10]
 
 
 
@@ -300,13 +297,6 @@ set_property IOSTANDARD LVCMOS33 [get_ports {JC[7]}]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
 set_property CFGBVS VCCO [current_design]
 
-
-
-connect_debug_port u_ila_0/probe1 [get_nets [list {page_cnt[0]} {page_cnt[1]}]]
-connect_debug_port u_ila_0/probe7 [get_nets [list u_top_drone/gyro_read_done]]
-
-
-
 create_debug_core u_ila_0 ila
 set_property ALL_PROBE_SAME_MU true [get_debug_cores u_ila_0]
 set_property ALL_PROBE_SAME_MU_CNT 1 [get_debug_cores u_ila_0]
@@ -318,9 +308,9 @@ set_property C_TRIGIN_EN false [get_debug_cores u_ila_0]
 set_property C_TRIGOUT_EN false [get_debug_cores u_ila_0]
 set_property port_width 1 [get_debug_ports u_ila_0/clk]
 connect_debug_port u_ila_0/clk [get_nets [list pclk]]
-set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
 set_property port_width 2 [get_debug_ports u_ila_0/probe0]
-connect_debug_port u_ila_0/probe0 [get_nets [list {u_top_drone/gyro/gyro_state[0]} {u_top_drone/gyro/gyro_state[1]}]]
+connect_debug_port u_ila_0/probe0 [get_nets [list {u_top_drone/gyro_state[0]} {u_top_drone/gyro_state[1]}]]
+set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe0]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe1]
 set_property port_width 4 [get_debug_ports u_ila_0/probe1]
@@ -328,7 +318,7 @@ connect_debug_port u_ila_0/probe1 [get_nets [list {JC_OBUF[1]} {JC_OBUF[2]} {JC_
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe2]
 set_property port_width 16 [get_debug_ports u_ila_0/probe2]
-connect_debug_port u_ila_0/probe2 [get_nets [list {led_OBUF[0]} {led_OBUF[1]} {led_OBUF[2]} {led_OBUF[3]} {led_OBUF[4]} {led_OBUF[5]} {led_OBUF[6]} {led_OBUF[7]} {led_OBUF[8]} {led_OBUF[9]} {led_OBUF[10]} {led_OBUF[11]} {led_OBUF[12]} {led_OBUF[13]} {led_OBUF[14]} {led_OBUF[15]}]]
+connect_debug_port u_ila_0/probe2 [get_nets [list {u_top_drone/led_reg[0]} {u_top_drone/led_reg[1]} {u_top_drone/led_reg[2]} {u_top_drone/led_reg[3]} {u_top_drone/led_reg[4]} {u_top_drone/led_reg[5]} {u_top_drone/led_reg[6]} {u_top_drone/led_reg[7]} {u_top_drone/led_reg[8]} {u_top_drone/led_reg[9]} {u_top_drone/led_reg[10]} {u_top_drone/led_reg[11]} {u_top_drone/led_reg[12]} {u_top_drone/led_reg[13]} {u_top_drone/led_reg[14]} {u_top_drone/led_reg[15]}]]
 create_debug_port u_ila_0 probe
 set_property PROBE_TYPE DATA_AND_TRIGGER [get_debug_ports u_ila_0/probe3]
 set_property port_width 104 [get_debug_ports u_ila_0/probe3]

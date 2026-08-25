@@ -15,10 +15,12 @@
 module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
+    input  wire btnL,
     input  wire btnR,
+    input  wire btnD,
     input wire [15:0] sw,
     input wire btnU,
-    output wire JB10,
+    output wire [3:0] motor_pwm,
     output wire [7:1] JC, //ostatecznie lepiej zrezygnowac z tablicy JC i zrobic ladne nazwy w .xdc
     input wire JC_input,
     output wire [7:0] sseg,
@@ -38,8 +40,6 @@ module top_drone_basys3 (
     wire locked;
     wire pclk;
     wire pclk_mirror;
-
-    logic [7:0] pwm_data;
 
     (* KEEP = "TRUE" *)
     (* ASYNC_REG = "TRUE" *)
@@ -123,7 +123,6 @@ module top_drone_basys3 (
      *  #=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=#=
      */
 
-    assign pwm_data= (sw[1]) ? 8'd10 : 8'd15;
     wire btnU_tick;
 
       debounce btnU_db (
@@ -133,13 +132,37 @@ module top_drone_basys3 (
          .db_level(),
          .db_tick(btnU_tick)
       );
-
+   wire btnR_pulse;
       debounce btnR_db (
          .clk(pclk),
          .reset(1'b0),
          .sw(btnR),
          .db_level(),
          .db_tick(btnR_pulse)
+      );
+      wire btnL_pulse;
+      debounce btnL_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnL),
+         .db_level(),
+         .db_tick(btnL_pulse)
+      );
+      wire btnD_pulse;
+      debounce btnD_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnD),
+         .db_level(),
+         .db_tick(btnD_pulse)
+      );
+      wire btnC_level;
+      debounce btnC_db (
+         .clk(pclk),
+         .reset(1'b0),
+         .sw(btnC),
+         .db_level(btnC_level),
+         .db_tick()
       );
       wire copi;
       wire sclk;
@@ -161,9 +184,8 @@ module top_drone_basys3 (
     top_drone u_top_drone (
         .clk  (pclk),
         .rst  (),
-        .d_in (pwm_data),
-        .enable(sw[0]),
-        .pwm(JB10),
+        .enable(sw[0]), // General PWM enable switch
+        .motor_pwm_out(motor_pwm),
         .copi(copi),
         .sclk(sclk),
         .poci(poci),
@@ -173,8 +195,10 @@ module top_drone_basys3 (
         .sseg,
         .led(led[15:0]),
         .button(btnU),
+        .btnD_pulse(btnD_pulse),
+        .btnL_pulse(btnL_pulse),
         .btnR_pulse(btnR_pulse),
-        .btnReset(btnC),
+        .btnReset(btnC_level),
         .sw(sw)
         );
 
