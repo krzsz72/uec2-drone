@@ -51,7 +51,8 @@ module convert_accel #(
       angle_deg_nxt = angle_deg;
       angle_raw_nxt = angle_raw;
       mul_result_nxt = mul_result;
-
+      latched_raw_nxt = latched_raw;
+      
       if(!data_latch)begin
          angle_raw_nxt = {accel_raw_data[7:0],accel_raw_data[15:8]};
       end else begin

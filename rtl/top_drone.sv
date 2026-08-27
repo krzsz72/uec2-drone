@@ -16,23 +16,19 @@ module top_drone#(
     parameter MAX_TICK = 7'd99 // Changed from 14'd9999 to 7'd99 for 1us tick
 ) (
         input  logic clk,
-        input  logic rst,
+        
         input  logic enable,
-        //---PWM---
+
         output logic [3:0] motor_pwm_out,
         input logic spi_start,
-     (*KEEP = "true"*)        output logic sclk,
-     (*KEEP = "true"*)        input logic poci,
-     (*KEEP = "true"*)        output logic cs_n,
-     (*KEEP = "true"*)        output logic copi,
-        //---SPI---
+        output logic sclk,
+        input logic poci,
+        output logic cs_n,
+        output logic copi,
+        
         output logic [3:0] an,
         output logic [7:0] sseg,
         output [15:0] led,
-        input logic button,
-        input logic btnD_pulse,
-        input logic btnL_pulse,
-        input logic btnR_pulse,
         input logic btnReset,
         input logic [15:0] sw
     );
@@ -328,20 +324,6 @@ module top_drone#(
 
 // --- DEKLARACJE POMOCNICZE ---
 logic [15:0] disp_hex;
-logic [2:0] page_cnt;       // Do przewijania 104-bitowych zmiennych
-logic       flag_6c_detect; // Zatrzask dla flagi odebrania '6c'
-
-// *******D E B U G**************D E B U G**************D E B U G*******
-// sw[14:12] wybór wartości do wyświetlenia:
-// 000: Kąt Roll (estim_roll)
-// 001: Kąt Pitch (estim_pitch)
-// 010: Korekcja PID Roll (pid_roll_out)
-// 011: Korekcja PID Pitch (pid_pitch_out)
-// 100: Korekcja PID Yaw (pid_yaw_out)
-// 101: Błąd PID Roll (pid_error_roll)
-// 110: Całka PID Roll (dolne 16 bitów)
-// 111: TRYB TESTOWY - szerokość impulsu dla silnika M1
-// *******D E B U G**************D E B U G**************D E B U G*******
 
 
 // --- GŁÓWNY BLOK DEBUGGERA ---
@@ -349,8 +331,6 @@ always_ff @(posedge clk) begin
     if (btnReset) begin
         led_reg <= 16'b0;
         disp_hex <= '0;
-        page_cnt <= 3'b0;
-        flag_6c_detect <= 1'b0;
     end 
     else begin
         case(sw[14:12])
@@ -361,7 +341,7 @@ always_ff @(posedge clk) begin
             3'b100: disp_hex <= pid_yaw_out;
             3'b101: disp_hex <= pid_error_roll;
             3'b110: disp_hex <= pid_integral_roll[15:0];
-            3'b111: disp_hex <= m1_width; // W trybie testowym, pokaż szerokość impulsu M1
+            3'b111: disp_hex <= {1'b0,m1_width}; // W trybie testowym, pokaż szerokość impulsu M1
             default: disp_hex <= 16'hDEAD;
         endcase
         led_reg <= disp_hex;
@@ -375,7 +355,7 @@ end
         .hex2(disp_hex[11:8]), 
         .hex1(disp_hex[7:4]), 
         .hex0(disp_hex[3:0]), 
-        .dp_in({1'b1,page_cnt}),       // kropki jako page_cntr
+        .dp_in(4'b1111),
         .an(an),
         .sseg(sseg)
     );
