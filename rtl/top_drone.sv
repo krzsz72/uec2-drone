@@ -73,24 +73,11 @@ module top_drone#(
     logic [14:0] m1_width, m2_width, m3_width, m4_width;
     logic [14:0] m_width[4];
 
-    /**
-     * Signals assignments
-     */
-
-    /**
-     * Submodules instances
-     */
-
-     //logic [6:0] destination = 7'h0F;
-     //logic [7:0] data_write;
-     //logic [31:0] nadajwartosc = {1'b0,destination,data_write,16'b0};
-      (*KEEP = "true"*)
-     logic [103:0] odczytwartosc;          // = {1'b1,destination,16'b0};
-     wire spi_done;
-     (*KEEP = "true"*)
-    logic [103:0] spi_odebrane; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
+    logic [103:0] spi_transmit;       
+    wire spi_done;
+    logic [103:0] spi_received; //max potrzebuje zmiescic 6x2x8bit = 96b +8bit padding z komendy kontrolera
     logic [6:0] data_length;
-    (* KEEP = "true" *) logic [1:0] gyro_state;
+    logic [1:0] gyro_state;
 
     logic gyro_read_done;
     assign gyro_read_done = ((gyro_state==2'b10) & spi_done); 
@@ -100,9 +87,9 @@ module top_drone#(
         .clk(clk),
         .rst_n(~btnReset),
         .d_length(data_length),
-        .d_out(odczytwartosc),
+        .d_out(spi_transmit),
         .ready( (spi_done && sw[15]) | spi_start),
-        .gyro_data( (&spi_odebrane[1:0]) ),
+        .gyro_data( (&spi_received[1:0]) ),
         .state_curr(gyro_state),
         .state_prev()
     );
@@ -114,57 +101,75 @@ module top_drone#(
          .d_length(data_length),
          .sclk(sclk),
          .cs_n(cs_n),
-         .reg_rx(spi_odebrane),
-         .reg_tx(odczytwartosc),
+         .reg_rx(spi_received),
+         .reg_tx(spi_transmit),
          .poci(poci),
          .copi(copi),
          .busy(),
          .done(spi_done)
       );
 
-    // --- Konwersja danych z IMU ---
     // Dane z SPI są mapowane na odpowiednie osie i konwertowane do formatu Q15.24
-    // UWAGA: Poprawiono błędne mapowanie danych!
-
+   
     // Oś ROLL (Gyro Y, Accel X)
     convert_gyro #(.WIDTH(16)) conv_gyro_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .gyro_raw_data(spi_odebrane[31:16]), // GYRO_Y
+        .gyro_raw_data(spi_received[31:16]), // GYRO_Y
         .data_latch(gyro_read_done),
-        .mul_result(gyro_roll_q24)
+        .mul_result(gyro_roll_q24),
+        // Wyjścia debugujące niepodłączone
+        .angle_deg(),
+        .angle_raw(),
+        .latched_raw()
     );
     convert_accel #(.WIDTH(16)) conv_accel_roll (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[63:48]), // ACCEL_X
+        .accel_raw_data(spi_received[63:48]), // ACCEL_X
         .data_latch(gyro_read_done),
-        .mul_result(accel_roll_q24)
+        .mul_result(accel_roll_q24),
+        // Wyjścia debugujące niepodłączone
+        .angle_deg(),
+        .angle_raw(),
+        .latched_raw()
     );
 
     // Oś PITCH (Gyro X, Accel Y)
     convert_gyro #(.WIDTH(16)) conv_gyro_pitch (
         .clk(clk),
         .rst_n(~btnReset),
-        .gyro_raw_data(spi_odebrane[15:0]), // GYRO_X
+        .gyro_raw_data(spi_received[15:0]), // GYRO_X
         .data_latch(gyro_read_done),
-        .mul_result(gyro_pitch_q24)
+        .mul_result(gyro_pitch_q24),
+        // Wyjścia debugujące niepodłączone
+        .angle_deg(),
+        .angle_raw(),
+        .latched_raw()
     );
     convert_accel #(.WIDTH(16)) conv_accel_pitch (
         .clk(clk),
         .rst_n(~btnReset),
-        .accel_raw_data(spi_odebrane[79:64]), // ACCEL_Y
+        .accel_raw_data(spi_received[79:64]), // ACCEL_Y
         .data_latch(gyro_read_done),
-        .mul_result(accel_pitch_q24)
+        .mul_result(accel_pitch_q24),
+        // Wyjścia debugujące niepodłączone
+        .angle_deg(),
+        .angle_raw(),
+        .latched_raw()
     );
 
     // Oś YAW (Gyro Z)
     convert_gyro #(.WIDTH(16)) conv_gyro_yaw (
         .clk(clk),
         .rst_n(~btnReset),
-        .gyro_raw_data(spi_odebrane[47:32]), // GYRO_Z
+        .gyro_raw_data(spi_received[47:32]), // GYRO_Z
         .data_latch(gyro_read_done),
-        .mul_result(gyro_yaw_rate_q24)
+        .mul_result(gyro_yaw_rate_q24),
+        // Wyjścia debugujące niepodłączone
+        .angle_deg(),
+        .angle_raw(),
+        .latched_raw()
     );
 
     // --- Estymacja kątów (Filtr komplementarny) ---
@@ -276,8 +281,11 @@ module top_drone#(
         .Kp(Kp_pitch),
         .Ki(Ki_pitch),
         .Kd(Kd_pitch),
-        .pid_output(pid_pitch_out)
+        .pid_output(pid_pitch_out),
         // Wyjścia debugujące niepodłączone
+        .pid_derivative_out(),
+        .pid_error_out(),
+        .pid_integral_out()
     );
 
     PID #(.WIDTH(16)) pid_yaw_inst (
@@ -288,7 +296,11 @@ module top_drone#(
         .Kp(Kp_yaw),
         .Ki(Ki_yaw),
         .Kd(Kd_yaw),
-        .pid_output(pid_yaw_out)
+        .pid_output(pid_yaw_out),
+        // Wyjścia debugujące niepodłączone
+        .pid_derivative_out(),
+        .pid_error_out(),
+        .pid_integral_out()
     );
 
     // --- Tryb drona i przepustnica ---
@@ -317,7 +329,8 @@ module top_drone#(
                 .clk(clk),
                 .enable(enable),
                 .d_in(m_width[i]),
-                .pwm(motor_pwm_out[i])
+                .pwm(motor_pwm_out[i]),
+                .cnt() //debug odlaczony
             );
         end
     endgenerate

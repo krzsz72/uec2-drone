@@ -15,11 +15,8 @@
 module top_drone_basys3 (
     input  wire clk,
     input  wire btnC,
-    input  wire btnL,
-    input  wire btnR,
-    input  wire btnD,
-    input wire [15:0] sw,
     input wire btnU,
+    input wire [15:0] sw,
     output wire [3:0] motor_pwm,
     output wire [7:1] JC, //ostatecznie lepiej zrezygnowac z tablicy JC i zrobic ladne nazwy w .xdc
     input wire JC_input,
@@ -132,30 +129,7 @@ module top_drone_basys3 (
          .db_level(),
          .db_tick(btnU_tick)
       );
-   wire btnR_pulse;
-      debounce btnR_db (
-         .clk(pclk),
-         .reset(1'b0),
-         .sw(btnR),
-         .db_level(),
-         .db_tick(btnR_pulse)
-      );
-      wire btnL_pulse;
-      debounce btnL_db (
-         .clk(pclk),
-         .reset(1'b0),
-         .sw(btnL),
-         .db_level(),
-         .db_tick(btnL_pulse)
-      );
-      wire btnD_pulse;
-      debounce btnD_db (
-         .clk(pclk),
-         .reset(1'b0),
-         .sw(btnD),
-         .db_level(),
-         .db_tick(btnD_pulse)
-      );
+   
       wire btnC_level;
       debounce btnC_db (
          .clk(pclk),
@@ -183,7 +157,6 @@ module top_drone_basys3 (
 
     top_drone u_top_drone (
         .clk  (pclk),
-        .rst  (),
         .enable(sw[0]), // General PWM enable switch
         .motor_pwm_out(motor_pwm),
         .copi(copi),
@@ -194,10 +167,6 @@ module top_drone_basys3 (
         .an,
         .sseg,
         .led(led[15:0]),
-        .button(btnU),
-        .btnD_pulse(btnD_pulse),
-        .btnL_pulse(btnL_pulse),
-        .btnR_pulse(btnR_pulse),
         .btnReset(btnC_level),
         .sw(sw)
         );
