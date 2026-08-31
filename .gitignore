@@ -1,6 +1,7 @@
 # Copyright (C) 2025  AGH University of Science and Technology
 # MTM UEC2
 # Author: Piotr Kaczmarczyk
+# Modified by: Krzysztof Piziak
 #
 # Description:
 # List of files and directories not to be tracked by git.
@@ -36,5 +37,5 @@ dvt_build.log
 xcelium.d
 xrun.log
 
-results/
+
 *.ltx

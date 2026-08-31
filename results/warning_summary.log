@@ -1,0 +1,10 @@
+Warnings, critical warnings and errors from synthesis and implementation
+
+Created: 2026-08-31 17:04:51
+
+----SYNTHESIS----
+WARNING: [Synth 8-6014] Unused sequential element integral_next_reg was removed.  [C:/Users/LENOVO/Documents/uc2/proj/uec2-drone/rtl/PID.sv:46]
+WARNING: [Synth 8-7080] Parallel synthesis criteria is not met
+
+----IMPLEMENTATION----
+WARNING: [Power 33-332] Found switching activity that implies high-fanout reset nets being asserted for excessive periods of time which may result in inaccurate power analysis.
