@@ -1,57 +1,11 @@
 //******************************************************************************
 //       ______________________________________________
 //      |                                              |
-//      | SPI interface                                |
-//      |______________________________________________|
-//      |                                              |
-//      |    Parameters and defaults                   |
-//      |        WIDTH  = 16  bits                     | 
-//      |                                              |
-//      |                                              |
-//      |                                              |
-//  ----| d_length (start)                        sclk |----
-//  ==8=| reg_tx                                reg_rx |=8==
-//  ----| poci                                    copi |----
-//      |                                         done |----
-//  ----| clk                                     busy |----
-//      |                                         cs_n |----
+//      | SPI controller                               |
 //      |______________________________________________|
 //
-//** Description ***************************************************************
-//
-//  An SPI interface controller with inout registers and serial communication copi poci wires.
-//
-//** Sample Instantiation ******************************************************
-//
-//    spi_controller #(
-//        .WIDTH(16)
-//    )
-//    spi_controller(
-//        .clk(clk),
-//        .start(start),
-//        .sclk(sclk),
-//        .cs_n(cs_n),
-//        .reg_rx(reg_rx),
-//        .reg_tx(reg_tx),
-//        .poci(poci),
-//        .copi(copi),
-//        .busy(busy),
-//        .done(done)
-//    );
-//
-//** Signals: ************************************************************
-//
-//  1) clk: High speed system clock (typically 100 MHz)
-//
-//  2) start: Activates the full-duplex transmission when logic high.
-//
-//  3) sclk: SPI transmission clock. Due to posedge clk logic it is half of clk. 
-//
-//  4) reg_rx/reg_tx : internal register holding the transceived data.
-//
-//  5) poci/copi : wires for serial transmission. Containt single bit informaation 
-//                 that is being currently transceived; SDI and SDO are, respectively, the serial port data input and output. Those lines are driven at the falling edge of SPC and should be captured at the rising edge of SPC
-//
+// Author: Krzysztof Piziak
+//******************************************************************************
 
 
 module spi_controller #(
@@ -84,7 +38,6 @@ module spi_controller #(
    localparam CLK_DIVIDER = 50;
    logic [5:0] clk_div, clk_div_nxt;
    logic spi_tick;
-   //logic [WIDTH-1:0] d_length = data_length;
 
    // seq block
    always_ff @(posedge clk) begin
@@ -172,7 +125,6 @@ module spi_controller #(
                busy_nxt     = 1'b1;
                cs_n_nxt     = 1'b0;          
                shift_tx_nxt = reg_tx;
-               //copi_nxt     = reg_tx[WIDTH-1];  //shift_tx_nxt jest wczesny o 1 takt 13082026 juz chb nie?
             end
          end
          

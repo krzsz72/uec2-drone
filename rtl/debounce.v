@@ -1,4 +1,5 @@
 // Listing 4.21
+// Debouncer z zajec
 module debounce
    (
     input wire clk, reset,

@@ -1,54 +1,12 @@
 //******************************************************************************
 //       ______________________________________________
 //      |                                              |
-//      | PWM  d_in/MAX_PWM fill%                      |
-//      |______________________________________________|
-//      |                                              |
-//      |    Parameters and defaults                   |
-//      |        MAX_TICK  = 7'd99                     |
-//      |        MAX_PWM   = 15'd19999                 |
-//      |        eg. d_in = 1000 ===== 10000/20000 fill|
-//      |                                              |
-//  ----| enable                                       |
-// ==15=| d_in                                 PWM_out |----
-//      |                                          cnt |==15=
-//  ----| clk                                          |
+//      | PWM signal generator                         |
 //      |______________________________________________|
 //
-//** Description ***************************************************************
-//
-//  A Pulse Width Modulator (PWM). When enabled, the count advances on the 
-//  rising edge of the system clock.
-//
-//** Sample Instantiation ******************************************************
-//
-//    PWM #(
-//        .MAX_TICK(MAX_TICK),
-//        .MAX_PWM(PAX_PWM)
-//    )
-//    PWM(
-//        .clk(clk),
-//        .enable(enable),
-//        .d_in(d_in),
-//        .PWM(PWM),
-//        .cnt(cnt)
-//    );
-//
-//** Signal Inputs: ************************************************************
-//
-//  1) clk: High speed system clock (typically 100 MHz)
-//
-//  2) enable: Activates the PWM when logic high. PWM idles low when deactivated.
-//
-//  3) d_in: Is used to determine the duty cycle of the PWM. currently 1us resolution
-//
-//** Signal Outputs ************************************************************
-//
-//  1) PWM: Provides a Pulse Width Modulated signal. The frequency is 
-//     determined as described in the comments.
-//
-//  2) cnt: Provides access to the PWM register. 
-//
+// Author: Krzysztof Piziak, Szymon Rybak
+//******************************************************************************
+
 
 module pwm #(
    parameter MAX_TICK=7'd99, //prescaler

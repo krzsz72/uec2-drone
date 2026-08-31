@@ -1,4 +1,4 @@
-
+//testbench nieaktualny
 module top_drone_tb();
 
     /* Module Inputs */
@@ -35,9 +35,7 @@ module top_drone_tb();
         .MAX_TICK(4)
     ) test_top(
         .clk(clk),
-        .enable(enable),
-        .d_in(d_in),
-        .pwm(PWM)
+        .enable(enable)
     );
 
 //** ASSIGN STATEMENTS ****************************************

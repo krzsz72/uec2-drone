@@ -1,3 +1,13 @@
+//******************************************************************************
+//       ______________________________________________
+//      |                                              |
+//      | PID controller                               |
+//      |______________________________________________|
+//
+// Author: Szymon Rybak, Krzysztof Piziak
+//******************************************************************************
+
+
 module PID #(
     parameter int WIDTH = 16 // Width of angle_deg input (Q8.7)
 ) (
@@ -99,31 +109,5 @@ module PID #(
     end
 
     assign pid_derivative = pid_error - pid_last_error;
-
-    // Obliczenia składowych PID
-    // pid_error, pid_derivative są w formacie Q8.7
-    // pid_integral jest 32-bitowy, akumuluje wartości Q8.7, więc jest to Q24.7
-    // Wzmocnienia Kp, Ki, Kd są w formacie Q4.12
-    // p_term, d_term: Q8.7 * Q4.12 -> Q12.19
-    // i_term: Q24.7 * Q4.12 -> Q28.19
-   
-    
-        
-        
-    // assign p_term = pid_error * Kp;
-    // assign i_term = pid_integral * Ki;
-    // assign d_term = pid_derivative * Kd;
-
-    // Sumowanie składowych i skalowanie do wartości całkowitej.
-    // Część ułamkowa sumy ma 7 + 12 = 19 bitów.
-    // Przesuwamy o 17 bitów (zamiast 19), aby uzyskać część całkowitą
-    // i jednocześnie wzmocnić sygnał 4-krotnie (2^2 = 4).
-
-    // assign pid_output = (p_term + i_term + d_term) >>> (19 - 2);
-
-    // Wyjścia do debugowania
-    // assign pid_error_out = pid_error;
-    // assign pid_integral_out = pid_integral;
-    // assign pid_derivative_out = pid_derivative;
 
 endmodule

@@ -1,16 +1,12 @@
-/**
- * San Jose State University
- * EE178 Lab #4
- * Author: prof. Eric Crabilla
- *
- * Modified by:
- * 2025  AGH University of Science and Technology
- * MTM UEC2
- * Piotr Kaczmarczyk
- *
- * Description:
- * The project top module.
- */
+//******************************************************************************
+//       ______________________________________________
+//      |                                              |
+//      | drone top module                             |
+//      |______________________________________________|
+//
+// Author: Krzysztof Piziak, Szymon Rybak
+//******************************************************************************
+
 
 module top_drone#(
     parameter MAX_TICK = 7'd99 // Changed from 14'd9999 to 7'd99 for 1us tick
@@ -36,13 +32,9 @@ module top_drone#(
     timeunit 1ns;
     timeprecision 1ps;
 
-    /**
-     * Local variables and signals
-     */
     (* DONT_TOUCH = "true" *) logic [15:0] led_reg;
 
-    // --- Sygnały dla PID i miksera silników ---
-    // Wzmocnienia PID z przełączników (tylko dla ROLL)
+    
     logic signed [15:0] Kp_roll, Ki_roll, Kd_roll;
 
     // Wyjścia z regulatorów PID
@@ -195,7 +187,7 @@ module top_drone#(
     localparam signed [15:0] Ki_pitch = 16'sd0;     // I = 0.0
     localparam signed [15:0] Kd_pitch = 16'sd205;   // D = ~0.05
 
-    // Wzmocnienia dla YAW (bardzo delikatne, tryb "rate")
+    // Wzmocnienia dla YAW 
     localparam signed [15:0] Kp_yaw = 16'sd1024;  // P = 0.25
     localparam signed [15:0] Ki_yaw = 16'sd0;     // I = 0.0
     localparam signed [15:0] Kd_yaw = 16'sd0;     // D = 0.0
@@ -209,20 +201,17 @@ module top_drone#(
     assign test_mode_active = (sw[14:12] == 3'b111);
 
     always_comb begin
-        // Domyślnie używaj normalnych wartości z PID i przełączników
         final_throttle = throttle;
         final_pid_roll_out = pid_roll_out;
 
-        // Jeśli tryb testowy jest aktywny, nadpisz wartości
         if (test_mode_active) begin
-            final_throttle = 16'd1550; // Środek nowego zakresu testowego (1100us, 2000us)
-            // Sprawdź przechył i ustaw sztywną korekcję
-            if (estim_roll > 16'sd128) begin // Przechył w prawo (> 1 stopień, format Q8.7)
-                final_pid_roll_out = -16'sd450; // Generuje korekcję, która w mikserze da 1100us i 2000us
-            end else if (estim_roll < -16'sd128) begin // Przechył w lewo (< -1 stopień)
-                final_pid_roll_out = 16'sd450;  // Generuje korekcję, która w mikserze da 2000us i 1100us
-            end else begin // Wyrównany
-                final_pid_roll_out = 16'sd0; // Brak korekcji
+            final_throttle = 16'd1550;
+            if (estim_roll > 16'sd128) begin 
+                final_pid_roll_out = -16'sd450; 
+            end else if (estim_roll < -16'sd128) begin 
+                final_pid_roll_out = 16'sd450;  
+            end else begin 
+                final_pid_roll_out = 16'sd0; 
             end
         end
     end
@@ -258,11 +247,11 @@ module top_drone#(
         endcase
     end
 
-    // --- Instancje regulatorów PID ---
+    
     PID #(.WIDTH(16)) pid_roll_inst (
         .clk(clk),
         .rst_n(~btnReset),
-        .enable(gyro_read_done), // Obliczenia co nową próbkę z IMU
+        .enable(gyro_read_done), // Obliczenia co nową próbkę
         .estim_roll(estim_roll),
         .Kp(Kp_roll),
         .Ki(Ki_roll),
@@ -303,7 +292,7 @@ module top_drone#(
         .pid_integral_out()
     );
 
-    // --- Tryb drona i przepustnica ---
+    
     // sw[0] (enable) - główne zezwolenie, sw[15] - uzbrojenie
     assign drone_mode = ~enable ? 2'b00 : (sw[15] ? 2'b10 : 2'b01); // 00:INIT, 01:ARMED, 10:RUN
     // Przepustnica z sw[5:0], skalowana do 1000-2016us

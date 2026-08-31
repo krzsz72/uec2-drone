@@ -1,16 +1,12 @@
-/**
- * San Jose State University
- * EE178 Lab #4
- * Author: prof. Eric Crabilla
- *
- * Modified by:
- * 2025  AGH University of Science and Technology
- * MTM UEC2
- * Piotr Kaczmarczyk
- *
- * Description:
- * Top level synthesizable module including the project top and all the FPGA-referred modules.
- */
+//******************************************************************************
+//       ______________________________________________
+//      |                                              |
+//      | Project top module                           |
+//      |______________________________________________|
+//
+// Author: Krzysztof Piziak, Szymon Rybak
+//******************************************************************************
+
 
 module top_drone_basys3 (
     input  wire clk,
@@ -18,8 +14,10 @@ module top_drone_basys3 (
     input wire btnU,
     input wire [15:0] sw,
     output wire [3:0] motor_pwm,
-    output wire [7:1] JC, //ostatecznie lepiej zrezygnowac z tablicy JC i zrobic ladne nazwy w .xdc
-    input wire JC_input,
+    output wire JC_csn,
+    input wire JC_poci,
+    output wire JC_sclk,
+    output wire JC_copi,
     output wire [7:0] sseg,
     output wire [3:0] an,
     output wire [15:0] led
@@ -45,15 +43,6 @@ module top_drone_basys3 (
     // https://docs.xilinx.com/r/en-US/ug901-vivado-synthesis/Synthesis-Attributes
 
 
-    /**
-     * Signals assignments
-     */
-
-   
-
-    /**
-     * FPGA submodules placement
-     */
 
     IBUF clk_ibuf (
         .I(clk),
@@ -101,9 +90,6 @@ module top_drone_basys3 (
         .O(pclk)
     );
 
-    // Mirror pclk on a pin for use by the testbench;
-    // not functionally required for this design to work.
-
     ODDR pclk_oddr (
         .Q(pclk_mirror),
         .C(pclk),
@@ -143,17 +129,13 @@ module top_drone_basys3 (
       wire poci;
       wire cs_n;
 
-      assign JC[3] = copi;
-      assign JC[7] = copi;
+      assign JC_copi = copi;
 
-      assign JC[2] =sclk;
-      assign JC[6] = sclk;
+      assign JC_sclk =sclk;
 
-      assign poci = JC_input;
-      assign JC[5] = poci; //porty w xdc sa inaczej numerowane ofc smh 🙄
+      assign poci = JC_poci;
 
-      assign JC[1] =cs_n;
-      assign JC[4] = cs_n;
+      assign JC_csn =cs_n;
 
     top_drone u_top_drone (
         .clk  (pclk),
